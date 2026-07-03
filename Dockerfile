@@ -18,6 +18,6 @@ RUN iconv -f UTF-16 -t UTF-8 requirements.txt > requirements-utf8.txt \
 
 COPY backend .
 
-EXPOSE 6000
+EXPOSE 7000
 
-CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","6000"]
+CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","7000"]
