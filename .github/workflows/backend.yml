@@ -42,7 +42,7 @@ jobs:
           script: |
             set -e
 
-            APP_DIR=/home/ubuntu/Flowsphere
+            APP_DIR=/home/ubuntu/Flowsphere/backend
 
             cd $APP_DIR
 
