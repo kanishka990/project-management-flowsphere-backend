@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import DuplicateEmailException, ResourceConflictException, ResourceNotFoundException, ValidationException
+from app.core.exceptions import ResourceConflictException, ResourceNotFoundException, ValidationException
 from app.repositories.role_repository import RoleRepository
 from app.repositories.permission_repository import PermissionRepository
 from app.schemas.role_schema import RoleCreate, RoleUpdate

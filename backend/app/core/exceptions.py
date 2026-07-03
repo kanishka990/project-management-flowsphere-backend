@@ -51,6 +51,13 @@ class DuplicateEmailException(AppException):
             status_code=status.HTTP_409_CONFLICT,
         )
 
+class DuplicatePhoneNumberException(AppException):
+    """Raised when phone number already exists."""
+    def __init__(self):
+        super().__init__(
+            detail="Phone Number already registered",
+            status_code=status.HTTP_409_CONFLICT,
+        )
 
 class ValidationException(AppException):
     """Raised when validation fails."""
@@ -59,6 +66,7 @@ class ValidationException(AppException):
             detail=detail,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
+
 
 class PermissionDeniedException(AppException):
     """Raised when an authenticated user lacks required privileges."""

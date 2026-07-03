@@ -18,7 +18,7 @@ async def init_db(session):
         first_name="System",
         last_name="Admin",
         phone_number="0000000000",
-        hashed_password=hash_password("SuperSecretPassword123!"),
+        hashed_password=hash_password("Password@123!"),
         is_active=True,
         is_verified=True,
         is_first_login=False

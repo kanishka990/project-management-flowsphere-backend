@@ -127,6 +127,10 @@ class UserRepository(BaseRepository):
         stmt = select(func.count()).select_from(User).where(func.lower(User.email) == normalized)
         return await self.session.scalar(stmt) > 0
 
+    async def exists_phone_number(self, phone_number: str) -> bool:
+        stmt = select(func.count()).select_from(User).where(User.phone_number == phone_number)
+        return await self.session.scalar(stmt) > 0
+    
     async def exists_emp_id(self, emp_id: str) -> bool:
         stmt = select(func.count()).select_from(User).where(User.emp_id == emp_id)
         return await self.session.scalar(stmt) > 0

@@ -36,7 +36,7 @@ async def login(
     )
 
 
-@router.put("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/change-password", status_code=status.HTTP_202_ACCEPTED)
 async def change_password(
     payload: UserPasswordChange,
     current_user=Depends(get_current_active_user),
@@ -50,7 +50,7 @@ async def change_password(
         current_password=payload.current_password,
         new_password=payload.new_password,
     )
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content={})
+    return {"detail": "Password changed successfully."}
 
 
 @router.post("/reset-password", status_code=status.HTTP_202_ACCEPTED)

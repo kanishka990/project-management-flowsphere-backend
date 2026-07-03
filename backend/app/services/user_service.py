@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
     DuplicateEmailException,
+    DuplicatePhoneNumberException,
     ValidationException,
     ResourceNotFoundException,
 )
@@ -33,6 +34,8 @@ class UserService:
     async def create_user(self, payload: UserCreate, created_by: UUID | None = None):
         if await self.user_repo.exists_email(payload.email):
             raise DuplicateEmailException()
+        if await self.user_repo.exists_phone_number(payload.phone_number):
+            raise DuplicatePhoneNumberException()
 
         hashed_password = hash_password(payload.password)
         
