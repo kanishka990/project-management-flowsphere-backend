@@ -93,7 +93,7 @@ class UserRepository(BaseRepository):
             page_size=page_size
         )
 
-    async def create(self, user_data: UserCreate, hashed_password: str, emp_id: str, created_by=None) -> User:
+    async def create(self, user_data: UserCreate, hashed_password: str, emp_id: str, created_by=None, is_first_login: bool | None = None,) -> User:
         user = User(
             emp_id=emp_id,
             email=user_data.email.lower(),
@@ -104,6 +104,7 @@ class UserRepository(BaseRepository):
             hashed_password=hashed_password,
             created_by=created_by,
             updated_by=created_by,
+            is_first_login=True if is_first_login is None else is_first_login,
         )
         self.session.add(user)
         await self.session.flush()

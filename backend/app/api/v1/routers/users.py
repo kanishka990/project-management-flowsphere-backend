@@ -43,7 +43,14 @@ async def create_user(
     current_user=Depends(get_current_active_user),
     user_service: UserService = Depends(get_user_service),
 ):
-    return await user_service.create_user(payload, created_by=current_user.id)
+    """
+    Admin-created users receive a temporary password and must change it on first login.
+    """
+    return await user_service.create_user(
+        payload,
+        created_by=current_user.id,
+        require_password_change=True,
+    )
 
 
 @router.get(

@@ -53,6 +53,8 @@ class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    require_password_change: bool = False
+    message: str | None = None
 
 # 6. The Login Request Schema (Used when logging in)
 class LoginRequest(BaseModel):

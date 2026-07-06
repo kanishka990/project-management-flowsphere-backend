@@ -1,13 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
 
 from app.core.security import create_access_token, create_refresh_token
-from app.schemas.user_schema import LoginRequest, LoginResponse, UserCreate, UserResponse, UserPasswordChange, PasswordResetRequest
+from app.schemas.user_schema import (
+    LoginRequest,
+    LoginResponse,
+    UserCreate,
+    UserResponse,
+    UserPasswordChange,
+    PasswordResetRequest,
+)
 
 from app.api.dependencies.auth_dependencies import get_user_service, get_current_active_user
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
@@ -16,11 +23,14 @@ async def login(
 ):
     """
     Authenticate a user and return JWT access + refresh tokens.
+    If the user is logging in for the first time with a temporary password,
+    return a flag prompting them to change it.
     """
     user = await user_service.authenticate_user(
         credentials.email,
         credentials.password,
     )
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,6 +43,8 @@ async def login(
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
+        require_password_change=user.is_first_login,
+        message="Password change required on first login" if user.is_first_login else None,
     )
 
 
@@ -64,6 +76,7 @@ async def reset_password(
     await user_service.reset_password(payload.email)
     return {"detail": "If the email exists, password reset instructions have been sent."}
 
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     payload: UserCreate,
@@ -71,6 +84,10 @@ async def register(
 ):
     """
     Self-register a new user.
+    These users should not be forced to change password on first login.
     """
-    user = await user_service.create_user(payload)
+    user = await user_service.create_user(
+        payload,
+        require_password_change=False,
+    )
     return user
