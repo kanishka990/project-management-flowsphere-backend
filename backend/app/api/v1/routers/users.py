@@ -53,10 +53,12 @@ async def create_user(
 )
 async def list_users(
     search: str | None = Query(None),
+    email: str | None = Query(None),       # Added for direct email lookup
+    emp_id: str | None = Query(None),      # Added for direct employee ID lookup
     is_active: bool | None = Query(None),
     is_verified: bool | None = Query(None),
     is_first_login: bool | None = Query(None),
-    role_id: int | None = Query(None),
+    role_id: UUID | None = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     pagination: PaginationParams = Depends(PaginationParams),
@@ -66,30 +68,14 @@ async def list_users(
         page=pagination.page,
         page_size=pagination.page_size,
         search=search,
+        email=email,
+        emp_id=emp_id,
         is_active=is_active,
         is_verified=is_verified,
         is_first_login=is_first_login,
         role_id=role_id,
         sort_by=sort_by,
         sort_order=sort_order,
-    )
-    return format_pagination_response(items, pagination.page, actual_page_size, total)
-
-
-@router.get(
-    "/search",
-    response_model=UserListResponse,
-    dependencies=[Depends(require_permission("users:read"))],
-)
-async def search_users(
-    q: str = Query(..., min_length=1),
-    pagination: PaginationParams = Depends(PaginationParams),
-    user_service: UserService = Depends(get_user_service),
-):
-    items, total, actual_page_size = await user_service.list_users(
-        search=q,
-        page=pagination.page,
-        page_size=pagination.page_size,
     )
     return format_pagination_response(items, pagination.page, actual_page_size, total)
 
@@ -140,6 +126,7 @@ async def update_user(
     payload: UserUpdate,
     user_service: UserService = Depends(get_user_service),
 ):
+    # This single endpoint now handles generic updates AND activation/verification toggles
     return await user_service.update_user(user_id, payload)
 
 
@@ -156,120 +143,6 @@ async def delete_user(
     return {}
 
 
-@router.get(
-    "/by-email/{email}",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:read"))],
-)
-async def get_user_by_email(
-    email: str,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.get_user_by_email(email)
-
-
-@router.get(
-    "/by-emp-id/{emp_id}",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:read"))],
-)
-async def get_user_by_emp_id(
-    emp_id: str,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.get_user_by_emp_id(emp_id)
-
-
-@router.patch(
-    "/{user_id}/activate",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def activate_user(
-    user_id: UUID,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.activate_user(user_id)
-
-
-@router.patch(
-    "/{user_id}/deactivate",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def deactivate_user(
-    user_id: UUID,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.deactivate_user(user_id)
-
-
-@router.patch(
-    "/{user_id}/verify",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def verify_user(
-    user_id: UUID,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.verify_user(user_id)
-
-
-@router.patch(
-    "/{user_id}/unverify",
-    response_model=UserResponse,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def unverify_user(
-    user_id: UUID,
-    user_service: UserService = Depends(get_user_service),
-):
-    return await user_service.unverify_user(user_id)
-
-
-@router.post(
-    "/{user_id}/change-password",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def change_user_password(
-    user_id: UUID,
-    payload: UserPasswordChange,
-    user_service: UserService = Depends(get_user_service),
-):
-    await user_service.change_password(user_id, payload.current_password, payload.new_password)
-    return {}
-
-
-@router.post(
-    "/{user_id}/roles/{role_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def assign_role(
-    user_id: UUID,
-    role_id: int,
-    user_service: UserService = Depends(get_user_service),
-):
-    await user_service.assign_role(user_id, role_id)
-    return {}
-
-
-@router.delete(
-    "/{user_id}/roles/{role_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("users:update"))],
-)
-async def remove_role(
-    user_id: UUID,
-    role_id: int,
-    user_service: UserService = Depends(get_user_service),
-):
-    await user_service.remove_role(user_id, role_id)
-    return {}
-
-
 @router.put(
     "/{user_id}/roles",
     response_model=list[RoleResponse],
@@ -280,6 +153,7 @@ async def replace_roles(
     payload: UserRoleReplace,
     user_service: UserService = Depends(get_user_service),
 ):
+    # The frontend will send the complete array of role_ids to sync
     return await user_service.replace_roles(user_id, payload.role_ids)
 
 

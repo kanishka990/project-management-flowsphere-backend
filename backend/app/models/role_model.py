@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
+from uuid import UUID as UUIDType
 
-from sqlalchemy import String
+from sqlalchemy import String, UUID
+import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -17,7 +19,7 @@ if TYPE_CHECKING:
 class Role(Base, FullAuditMixin):
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 

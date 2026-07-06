@@ -15,7 +15,7 @@ class PermissionRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, permission_id: int) -> Permission | None:
+    async def get_by_id(self, permission_id: UUID) -> Permission | None:
         stmt = (
             select(Permission)
             .where(Permission.id == permission_id)
@@ -99,7 +99,7 @@ class PermissionRepository:
     async def get_roles(self, permission: Permission) -> list[Role]:
         return permission.roles
 
-    async def get_users(self, permission_id: int) -> list[User]:
+    async def get_users(self, permission_id: UUID) -> list[User]:
         stmt = (
             select(User)
             .join(user_roles, User.id == user_roles.c.user_id)

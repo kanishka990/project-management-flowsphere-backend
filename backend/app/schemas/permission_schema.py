@@ -15,7 +15,7 @@ class PermissionUpdate(BaseModel):
     submenu_id: Optional[UUID] = None
 
 class PermissionResponse(PermissionBase):
-    id: int
+    id: UUID
     code: str
 
     model_config = ConfigDict(from_attributes=True)

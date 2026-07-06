@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
+from uuid import UUID as UUIDType
 import uuid
-from uuid import UUID
+from typing import Optional
+
+from sqlalchemy import String, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import FullAuditMixin
@@ -16,7 +17,7 @@ from app.models.associations_model import user_roles
 class User(Base, FullAuditMixin):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True,default=uuid.uuid4)
+    id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     emp_id: Mapped[str] = mapped_column(String, unique=True, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     first_name: Mapped[str] = mapped_column(String)

@@ -1,3 +1,5 @@
+from uuid import UUID
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceConflictException, ResourceNotFoundException, ValidationException
 from app.repositories.role_repository import RoleRepository
@@ -22,7 +24,7 @@ class RoleService:
         role = await self.role_repo.create(payload)
         return role
 
-    async def get_role_by_id(self, role_id: int):
+    async def get_role_by_id(self, role_id: UUID):
         role = await self.role_repo.get_by_id(role_id)
         if not role:
             raise ResourceNotFoundException("Role")
@@ -44,7 +46,7 @@ class RoleService:
             page_size=page_size,
         )
 
-    async def update_role(self, role_id: int, payload: RoleUpdate):
+    async def update_role(self, role_id: UUID, payload: RoleUpdate):
         role = await self.get_role_by_id(role_id)
         return await self.role_repo.update(
             role,
@@ -52,13 +54,13 @@ class RoleService:
             description=payload.description,
         )
 
-    async def delete_role(self, role_id: int, allow_if_assigned: bool = False):
+    async def delete_role(self, role_id: UUID, allow_if_assigned: bool = False):
         role = await self.get_role_by_id(role_id)
         if not allow_if_assigned and await self.role_repo.user_count(role) > 0:
             raise ResourceConflictException("Cannot delete a role that is assigned to users")
         await self.role_repo.delete(role)
 
-    async def assign_permission(self, role_id: int, permission_id: int):
+    async def assign_permission(self, role_id: UUID, permission_id: UUID):
         role = await self.get_role_by_id(role_id)
         permission = await self.permission_repo.get_by_id(permission_id)
         if not permission:
@@ -66,7 +68,7 @@ class RoleService:
         await self.role_repo.assign_permission(role, permission)
         return permission
 
-    async def remove_permission(self, role_id: int, permission_id: int):
+    async def remove_permission(self, role_id: UUID, permission_id: UUID):
         role = await self.get_role_by_id(role_id)
         permission = await self.permission_repo.get_by_id(permission_id)
         if not permission:
@@ -74,7 +76,7 @@ class RoleService:
         await self.role_repo.remove_permission(role, permission)
         return permission
 
-    async def replace_permissions(self, role_id: int, permission_ids: list[int]):
+    async def replace_permissions(self, role_id: UUID, permission_ids: list[UUID]):
         role = await self.get_role_by_id(role_id)
         permissions = []
         for permission_id in permission_ids:
@@ -85,10 +87,10 @@ class RoleService:
         await self.role_repo.replace_permissions(role, permissions)
         return permissions
 
-    async def get_permissions(self, role_id: int):
+    async def get_permissions(self, role_id: UUID):
         role = await self.get_role_by_id(role_id)
         return await self.role_repo.get_permissions(role)
 
-    async def get_users(self, role_id: int):
+    async def get_users(self, role_id: UUID):
         role = await self.get_role_by_id(role_id)
         return await self.role_repo.get_users(role)

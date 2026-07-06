@@ -11,6 +11,8 @@ from app.core.exceptions import (
     TokenExpiredException,
 )
 
+from app.models.user_model import User
+
 # Initialize Argon2 password hasher globally
 argon2_ph = PasswordHasher()
 
@@ -38,14 +40,35 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user: User) -> str:
     settings = get_settings()
     expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": str(user_id), "exp": expire, "type": "access"}
-    
+
+    payload = {
+        "sub": user.emp_id,          # use emp_id here
+        "exp": expire,
+        "type": "access",
+        "user": {
+            "id": str(user.id),
+            "emp_id": user.emp_id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "middle_name": user.middle_name,
+            "last_name": user.last_name,
+            "roles": [
+                {
+                    "id": str(role.id),
+                    "name": role.name,
+                    "description": role.description,
+                }
+                for role in user.roles
+            ],
+        },
+    }
+
     return jwt.encode(
         payload,
-        settings.JWT_SECRET_KEY.get_secret_value(), 
+        settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
 

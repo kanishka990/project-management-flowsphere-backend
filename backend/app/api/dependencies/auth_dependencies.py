@@ -31,22 +31,20 @@ async def get_current_user(
             detail="Invalid authentication credentials",
         )
 
-    user_id = payload.get("sub")
-    if not user_id:
+    user_emp_id = payload.get("sub")
+    if not user_emp_id:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Invalid token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
         )
 
-    try:
-        user_uuid = UUID(user_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Invalid token subject"
-        )
+    user = await user_service.user_repo.get_by_emp_id(user_emp_id)
 
-    user = await user_service.user_repo.get_by_id(user_uuid)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
     
     if not user:
         raise HTTPException(

@@ -9,14 +9,14 @@ class RoleBase(BaseModel):
     description: Optional[str] = None
 
 class RoleCreate(RoleBase):
-    permission_ids: Optional[list[int]] = []
+    permission_ids: Optional[list[UUID]] = []
 
 class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = None
 
 class RoleResponse(RoleBase):
-    id: int
+    id: UUID
     permissions: list[PermissionResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -32,7 +32,7 @@ class RoleListResponse(BaseModel):
 class UserRoleAssign(BaseModel):
     """Schema for assigning a role to a user via API"""
     user_id: UUID
-    role_id: int
+    role_id: UUID
 
 class RolePermissionReplace(BaseModel):
     permission_ids: list[int] = Field(..., min_items=1)

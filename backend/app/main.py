@@ -40,8 +40,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(health_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(roles_router, prefix="/api/v1")
     app.include_router(permissions_router, prefix="/api/v1")

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.api.dependencies.permissions import require_permission
 from app.db.session import get_db
@@ -63,30 +64,12 @@ async def list_permissions(
 
 
 @router.get(
-    "/search",
-    response_model=PermissionListResponse,
-    dependencies=[Depends(require_permission("permissions:read"))],
-)
-async def search_permissions(
-    q: str = Query(..., min_length=1),
-    pagination: PaginationParams = Depends(PaginationParams),
-    service: PermissionService = Depends(get_permission_service),
-):
-    items, total, actual_page_size = await service.list_permissions(
-        search=q,
-        page=pagination.page,
-        page_size=pagination.page_size,
-    )
-    return format_pagination_response(items, pagination.page, actual_page_size, total)
-
-
-@router.get(
     "/{permission_id}",
     response_model=PermissionResponse,
     dependencies=[Depends(require_permission("permissions:read"))],
 )
 async def get_permission(
-    permission_id: int,
+    permission_id: UUID,
     service: PermissionService = Depends(get_permission_service),
 ):
     return await service.get_permission_by_id(permission_id)
@@ -98,7 +81,7 @@ async def get_permission(
     dependencies=[Depends(require_permission("permissions:update"))],
 )
 async def update_permission(
-    permission_id: int,
+    permission_id: UUID,
     payload: PermissionUpdate,
     service: PermissionService = Depends(get_permission_service),
 ):
@@ -111,7 +94,7 @@ async def update_permission(
     dependencies=[Depends(require_permission("permissions:delete"))],
 )
 async def delete_permission(
-    permission_id: int,
+    permission_id: UUID,
     service: PermissionService = Depends(get_permission_service),
 ):
     await service.delete_permission(permission_id)
@@ -124,7 +107,7 @@ async def delete_permission(
     dependencies=[Depends(require_permission("permissions:read"))],
 )
 async def get_roles_for_permission(
-    permission_id: int,
+    permission_id: UUID,
     service: PermissionService = Depends(get_permission_service),
 ):
     return await service.get_roles(permission_id)
@@ -136,7 +119,7 @@ async def get_roles_for_permission(
     dependencies=[Depends(require_permission("permissions:read"))],
 )
 async def get_users_for_permission(
-    permission_id: int,
+    permission_id: UUID,
     service: PermissionService = Depends(get_permission_service),
 ):
     return await service.get_users(permission_id)

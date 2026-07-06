@@ -83,7 +83,7 @@ class UserService:
         is_active: bool | None = None,
         is_verified: bool | None = None,
         is_first_login: bool | None = None,
-        role_id: int | None = None,
+        role_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ):
@@ -132,7 +132,7 @@ class UserService:
             raise ValidationException("Current password is incorrect")
         return await self.user_repo.update(user, hashed_password=hash_password(new_password))
 
-    async def assign_role(self, user_id: UUID, role_id: int):
+    async def assign_role(self, user_id: UUID, role_id: UUID):
         user = await self.get_user_by_id(user_id)
         role = await self.role_repo.get_by_id(role_id)
         if not role:
@@ -147,7 +147,7 @@ class UserService:
         # In a full implementation, generate a reset token and send an email.
         return None
 
-    async def remove_role(self, user_id: UUID, role_id: int):
+    async def remove_role(self, user_id: UUID, role_id: UUID):
         user = await self.get_user_by_id(user_id)
         role = await self.role_repo.get_by_id(role_id)
         if not role:
@@ -155,7 +155,7 @@ class UserService:
         await self.user_repo.remove_role(user, role)
         return role
 
-    async def replace_roles(self, user_id: UUID, role_ids: list[int]):
+    async def replace_roles(self, user_id: UUID, role_ids: list[UUID]):
         user = await self.get_user_by_id(user_id)
         roles = []
         for role_id in role_ids:

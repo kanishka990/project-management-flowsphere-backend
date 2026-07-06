@@ -1,4 +1,5 @@
 from __future__ import annotations
+from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,7 +15,7 @@ class RoleRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, role_id: int) -> Role | None:
+    async def get_by_id(self, role_id: UUID) -> Role | None:
         stmt = select(Role).where(Role.id == role_id).options(
             selectinload(Role.permissions),
             selectinload(Role.users),

@@ -44,7 +44,7 @@ class UserRepository(BaseRepository):
         is_active: bool | None = None,
         is_verified: bool | None = None,
         is_first_login: bool | None = None,
-        role_id: int | None = None,
+        role_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ): 

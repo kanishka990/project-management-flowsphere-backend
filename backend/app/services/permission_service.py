@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceConflictException, ResourceNotFoundException, ValidationException
 from app.repositories.permission_repository import PermissionRepository
@@ -18,7 +19,7 @@ class PermissionService:
     async def create_permission(self, payload: PermissionCreate):
         return await self.permission_repo.create(payload)
 
-    async def get_permission_by_id(self, permission_id: int):
+    async def get_permission_by_id(self, permission_id: UUID):
         permission = await self.permission_repo.get_by_id(permission_id)
         if not permission:
             raise ResourceNotFoundException("Permission")
@@ -40,7 +41,7 @@ class PermissionService:
             page_size=page_size,
         )
 
-    async def update_permission(self, permission_id: int, payload: PermissionUpdate):
+    async def update_permission(self, permission_id: UUID, payload: PermissionUpdate):
         permission = await self.get_permission_by_id(permission_id)
         return await self.permission_repo.update(
             permission,
@@ -48,13 +49,13 @@ class PermissionService:
             description=payload.description,
         )
 
-    async def delete_permission(self, permission_id: int, allow_if_assigned: bool = False):
+    async def delete_permission(self, permission_id: UUID, allow_if_assigned: bool = False):
         permission = await self.get_permission_by_id(permission_id)
         if not allow_if_assigned and permission.roles:
             raise ResourceConflictException("Cannot delete a permission that is assigned to roles")
         await self.permission_repo.delete(permission)
 
-    async def get_roles(self, permission_id: int):
+    async def get_roles(self, permission_id: UUID):
         permission = await self.get_permission_by_id(permission_id)
         return await self.permission_repo.get_roles(permission)
 

@@ -42,4 +42,4 @@ class FullAuditMixin:
         default=None
     )
     
-    deleted_by: Mapped[Optional[int]] = mapped_column(default=None)
+    deleted_by: Mapped[Optional[UUID]] = mapped_column(default=None)

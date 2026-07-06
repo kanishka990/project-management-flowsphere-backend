@@ -12,19 +12,36 @@ router = APIRouter(prefix="/menus", tags=["Menus"])
 def get_menu_service(db: AsyncSession = Depends(get_db)) -> MenuService:
     return MenuService(db, MenuRepository(db))
 
-@router.post("/", response_model=MenuResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=MenuResponse, 
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("menus:create"))]
+)
 async def create_menu(payload: MenuCreate, service: MenuService = Depends(get_menu_service)):
     return await service.create_menu(payload)
 
-@router.get("/", response_model=list[MenuResponse])
+@router.get(
+    "/", 
+    response_model=list[MenuResponse],
+    dependencies=[Depends(require_permission("menus:read"))]
+)
 async def list_menus(service: MenuService = Depends(get_menu_service)):
     return await service.list_menus()
 
-@router.patch("/{menu_id}", response_model=MenuResponse)
+@router.patch(
+    "/{menu_id}", 
+    response_model=MenuResponse,
+    dependencies=[Depends(require_permission("menus:update"))]
+)
 async def update_menu(menu_id: UUID, payload: MenuUpdate, service: MenuService = Depends(get_menu_service)):
     return await service.update_menu(menu_id, payload)
 
-@router.delete("/{menu_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{menu_id}", 
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("menus:delete"))]
+)
 async def delete_menu(menu_id: UUID, service: MenuService = Depends(get_menu_service)):
     await service.delete_menu(menu_id)
     return {}

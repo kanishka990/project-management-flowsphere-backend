@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING 
-from sqlalchemy import String, ForeignKey
+from typing import TYPE_CHECKING, Optional
+from uuid import UUID as UUIDType
+import uuid
+
+from sqlalchemy import String, ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 
 from app.db.base import Base
 
@@ -14,11 +16,14 @@ if TYPE_CHECKING:
 class SubMenu(Base):
     __tablename__ = "submenus"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     
-    menu_id: Mapped[UUID] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"))
+    menu_id: Mapped[UUIDType] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("menus.id", ondelete="CASCADE")
+    )
 
     menu: Mapped["Menu"] = relationship(
         "Menu", 

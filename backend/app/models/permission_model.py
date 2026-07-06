@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from sqlalchemy import String, ForeignKey
+from typing import TYPE_CHECKING, Optional
+from uuid import UUID as UUIDType
+import uuid
+
+from sqlalchemy import String, ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
-from uuid import UUID
 
 from app.db.base import Base
 from app.db.mixins import FullAuditMixin
@@ -17,12 +18,16 @@ if TYPE_CHECKING:
 class Permission(Base, FullAuditMixin):
     __tablename__ = "permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     action: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
-    submenu_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("submenus.id", ondelete="SET NULL"), nullable=True)
+    submenu_id: Mapped[Optional[UUIDType]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("submenus.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     roles: Mapped[list["Role"]] = relationship(
         "Role",

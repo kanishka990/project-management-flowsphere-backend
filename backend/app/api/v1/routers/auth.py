@@ -27,7 +27,7 @@ async def login(
             detail="Invalid credentials",
         )
 
-    access_token = create_access_token(str(user.id))
+    access_token = create_access_token(user)
     refresh_token = create_refresh_token(str(user.id))
 
     return LoginResponse(

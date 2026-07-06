@@ -32,8 +32,7 @@ class UserUpdate(BaseModel):
     phone_number: Optional[str] = None
 
 # 4. The Response Schema (Used when returning data to the frontend)
-class UserResponse(UserBase):
-    id: UUID            
+class UserResponse(UserBase):           
     emp_id: str         
     is_active: bool
     is_verified: bool
@@ -67,7 +66,7 @@ class UserPasswordChange(BaseModel):
 
 # 8. The Role Schema (Used to assign and change roles)
 class UserRoleReplace(BaseModel):
-    role_ids: list[int] = Field(..., min_items=1)
+    role_ids: list[UUID] = Field(..., min_items=1)
 
 # 9. The User List Response Schema (Used for paginated user lists)
 class UserListResponse(BaseModel):

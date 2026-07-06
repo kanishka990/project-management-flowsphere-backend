@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING 
+from uuid import UUID as UUIDType
+import uuid
 
 if TYPE_CHECKING:
     from app.models.submenu_model import SubMenu
 
-from sqlalchemy import String
+from sqlalchemy import String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from uuid import UUID
 
 from app.db.base import Base
 
 class Menu(Base):
     __tablename__ = "menus"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String, unique=True, index=True)
     

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,30 +61,12 @@ async def list_roles(
 
 
 @router.get(
-    "/search",
-    response_model=RoleListResponse,
-    dependencies=[Depends(require_permission("roles:read"))],
-)
-async def search_roles(
-    q: str = Query(..., min_length=1),
-    pagination: PaginationParams = Depends(PaginationParams),
-    service: RoleService = Depends(get_role_service),
-):
-    items, total, actual_page_size = await service.list_roles(
-        search=q,
-        page=pagination.page,
-        page_size=pagination.page_size,
-    )
-    return format_pagination_response(items, pagination.page, actual_page_size, total)
-
-
-@router.get(
     "/{role_id}",
     response_model=RoleResponse,
     dependencies=[Depends(require_permission("roles:read"))],
 )
 async def get_role(
-    role_id: int,
+    role_id: UUID,
     service: RoleService = Depends(get_role_service),
 ):
     return await service.get_role_by_id(role_id)
@@ -94,7 +78,7 @@ async def get_role(
     dependencies=[Depends(require_permission("roles:update"))],
 )
 async def update_role(
-    role_id: int,
+    role_id: UUID,
     payload: RoleUpdate,
     service: RoleService = Depends(get_role_service),
 ):
@@ -107,38 +91,10 @@ async def update_role(
     dependencies=[Depends(require_permission("roles:delete"))],
 )
 async def delete_role(
-    role_id: int,
+    role_id: UUID,
     service: RoleService = Depends(get_role_service),
 ):
     await service.delete_role(role_id)
-    return {}
-
-
-@router.post(
-    "/{role_id}/permissions/{permission_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("roles:update"))],
-)
-async def assign_permission(
-    role_id: int,
-    permission_id: int,
-    service: RoleService = Depends(get_role_service),
-):
-    await service.assign_permission(role_id, permission_id)
-    return {}
-
-
-@router.delete(
-    "/{role_id}/permissions/{permission_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("roles:update"))],
-)
-async def remove_permission(
-    role_id: int,
-    permission_id: int,
-    service: RoleService = Depends(get_role_service),
-):
-    await service.remove_permission(role_id, permission_id)
     return {}
 
 
@@ -148,7 +104,7 @@ async def remove_permission(
     dependencies=[Depends(require_permission("roles:update"))],
 )
 async def replace_permissions(
-    role_id: int,
+    role_id: UUID,
     payload: RolePermissionReplace,
     service: RoleService = Depends(get_role_service),
 ):
@@ -161,7 +117,7 @@ async def replace_permissions(
     dependencies=[Depends(require_permission("roles:read"))],
 )
 async def get_permissions(
-    role_id: int,
+    role_id: UUID,
     service: RoleService = Depends(get_role_service),
 ):
     return await service.get_permissions(role_id)
@@ -173,7 +129,7 @@ async def get_permissions(
     dependencies=[Depends(require_permission("roles:read"))],
 )
 async def get_users_in_role(
-    role_id: int,
+    role_id: UUID,
     service: RoleService = Depends(get_role_service),
 ):
     return await service.get_users(role_id)
