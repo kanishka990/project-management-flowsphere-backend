@@ -65,8 +65,8 @@ async def change_password(
     return {"detail": "Password changed successfully."}
 
 
-@router.post("/reset-password", status_code=status.HTTP_202_ACCEPTED)
-async def reset_password(
+@router.post("/forget-password", status_code=status.HTTP_202_ACCEPTED)
+async def forget_password(
     payload: PasswordResetRequest,
     user_service: UserService = Depends(get_user_service),
 ):

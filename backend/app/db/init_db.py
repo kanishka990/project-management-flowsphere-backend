@@ -1,4 +1,3 @@
-# app/db/init_db.py
 from app.models.user_model import User
 from app.models.role_model import Role
 from app.core.security import hash_password
