@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.permissions import require_permission
+from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 from app.repositories.permission_repository import PermissionRepository
 from app.repositories.role_repository import RoleRepository
@@ -29,7 +29,7 @@ def get_role_service(db: AsyncSession = Depends(get_db)) -> RoleService:
     "/",
     response_model=RoleResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("roles:create"))],
+    dependencies=[Depends(PermissionChecker(["roles:create"]))],
 )
 async def create_role(
     payload: RoleCreate,
@@ -41,7 +41,7 @@ async def create_role(
 @router.get(
     "/",
     response_model=RoleListResponse,
-    dependencies=[Depends(require_permission("roles:read"))],
+    dependencies=[Depends(PermissionChecker(["roles:read"]))],
 )
 async def list_roles(
     search: str | None = Query(None),
@@ -63,7 +63,7 @@ async def list_roles(
 @router.get(
     "/{role_id}",
     response_model=RoleResponse,
-    dependencies=[Depends(require_permission("roles:read"))],
+    dependencies=[Depends(PermissionChecker(["roles:read"]))],
 )
 async def get_role(
     role_id: UUID,
@@ -75,7 +75,7 @@ async def get_role(
 @router.patch(
     "/{role_id}",
     response_model=RoleResponse,
-    dependencies=[Depends(require_permission("roles:update"))],
+    dependencies=[Depends(PermissionChecker(["roles:update"]))],
 )
 async def update_role(
     role_id: UUID,
@@ -88,7 +88,7 @@ async def update_role(
 @router.delete(
     "/{role_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("roles:delete"))],
+    dependencies=[Depends(PermissionChecker(["roles:delete"]))],
 )
 async def delete_role(
     role_id: UUID,
@@ -101,7 +101,7 @@ async def delete_role(
 @router.put(
     "/{role_id}/permissions",
     response_model=list[PermissionResponse],
-    dependencies=[Depends(require_permission("roles:update"))],
+    dependencies=[Depends(PermissionChecker(["roles:update"]))],
 )
 async def replace_permissions(
     role_id: UUID,
@@ -114,7 +114,7 @@ async def replace_permissions(
 @router.get(
     "/{role_id}/permissions",
     response_model=list[PermissionResponse],
-    dependencies=[Depends(require_permission("roles:read"))],
+    dependencies=[Depends(PermissionChecker(["roles:read"]))],
 )
 async def get_permissions(
     role_id: UUID,
@@ -126,7 +126,7 @@ async def get_permissions(
 @router.get(
     "/{role_id}/users",
     response_model=list[UserResponse],
-    dependencies=[Depends(require_permission("roles:read"))],
+    dependencies=[Depends(PermissionChecker(["roles:read"]))],
 )
 async def get_users_in_role(
     role_id: UUID,

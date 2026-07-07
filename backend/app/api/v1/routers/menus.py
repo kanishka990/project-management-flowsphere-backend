@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from uuid import UUID
-from app.api.dependencies.permissions import require_permission
+from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.menu_repository import MenuRepository
@@ -16,7 +16,7 @@ def get_menu_service(db: AsyncSession = Depends(get_db)) -> MenuService:
     "/", 
     response_model=MenuResponse, 
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("menus:create"))]
+    dependencies=[Depends(PermissionChecker(["menus:create"]))]
 )
 async def create_menu(payload: MenuCreate, service: MenuService = Depends(get_menu_service)):
     return await service.create_menu(payload)
@@ -24,7 +24,7 @@ async def create_menu(payload: MenuCreate, service: MenuService = Depends(get_me
 @router.get(
     "/", 
     response_model=list[MenuResponse],
-    dependencies=[Depends(require_permission("menus:read"))]
+    dependencies=[Depends(PermissionChecker(["menus:read"]))]
 )
 async def list_menus(service: MenuService = Depends(get_menu_service)):
     return await service.list_menus()
@@ -32,7 +32,7 @@ async def list_menus(service: MenuService = Depends(get_menu_service)):
 @router.patch(
     "/{menu_id}", 
     response_model=MenuResponse,
-    dependencies=[Depends(require_permission("menus:update"))]
+    dependencies=[Depends(PermissionChecker(["menus:update"]))]
 )
 async def update_menu(menu_id: UUID, payload: MenuUpdate, service: MenuService = Depends(get_menu_service)):
     return await service.update_menu(menu_id, payload)
@@ -40,7 +40,7 @@ async def update_menu(menu_id: UUID, payload: MenuUpdate, service: MenuService =
 @router.delete(
     "/{menu_id}", 
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("menus:delete"))]
+    dependencies=[Depends(PermissionChecker(["menus:delete"]))]
 )
 async def delete_menu(menu_id: UUID, service: MenuService = Depends(get_menu_service)):
     await service.delete_menu(menu_id)

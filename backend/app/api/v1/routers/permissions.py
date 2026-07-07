@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
-from app.api.dependencies.permissions import require_permission
+from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 from app.repositories.permission_repository import PermissionRepository
 from app.repositories.role_repository import RoleRepository
@@ -32,7 +32,7 @@ def get_permission_service(db: AsyncSession = Depends(get_db)) -> PermissionServ
     "/",
     response_model=PermissionResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("permissions:create"))],
+    dependencies=[Depends(PermissionChecker(["permissions:create"]))],
 )
 async def create_permission(
     payload: PermissionCreate,
@@ -44,7 +44,7 @@ async def create_permission(
 @router.get(
     "/",
     response_model=PermissionListResponse,
-    dependencies=[Depends(require_permission("permissions:read"))],
+    dependencies=[Depends(PermissionChecker(["permissions:read"]))],
 )
 async def list_permissions(
     search: str | None = Query(None),
@@ -66,7 +66,7 @@ async def list_permissions(
 @router.get(
     "/{permission_id}",
     response_model=PermissionResponse,
-    dependencies=[Depends(require_permission("permissions:read"))],
+    dependencies=[Depends(PermissionChecker(["permissions:read"]))],
 )
 async def get_permission(
     permission_id: UUID,
@@ -78,7 +78,7 @@ async def get_permission(
 @router.patch(
     "/{permission_id}",
     response_model=PermissionResponse,
-    dependencies=[Depends(require_permission("permissions:update"))],
+    dependencies=[Depends(PermissionChecker(["permissions:update"]))],
 )
 async def update_permission(
     permission_id: UUID,
@@ -91,7 +91,7 @@ async def update_permission(
 @router.delete(
     "/{permission_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("permissions:delete"))],
+    dependencies=[Depends(PermissionChecker(["permissions:delete"]))],
 )
 async def delete_permission(
     permission_id: UUID,
@@ -104,7 +104,7 @@ async def delete_permission(
 @router.get(
     "/{permission_id}/roles",
     response_model=list[RoleResponse],
-    dependencies=[Depends(require_permission("permissions:read"))],
+    dependencies=[Depends(PermissionChecker(["permissions:read"]))],
 )
 async def get_roles_for_permission(
     permission_id: UUID,
@@ -116,7 +116,7 @@ async def get_roles_for_permission(
 @router.get(
     "/{permission_id}/users",
     response_model=list[UserResponse],
-    dependencies=[Depends(require_permission("permissions:read"))],
+    dependencies=[Depends(PermissionChecker(["permissions:read"]))],
 )
 async def get_users_for_permission(
     permission_id: UUID,
