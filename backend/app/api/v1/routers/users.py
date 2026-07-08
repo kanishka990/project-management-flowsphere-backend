@@ -63,9 +63,10 @@ async def list_users(
     email: str | None = Query(None),       # Added for direct email lookup
     emp_id: str | None = Query(None),      # Added for direct employee ID lookup
     is_active: bool | None = Query(None),
-    is_verified: bool | None = Query(None),
     is_first_login: bool | None = Query(None),
     role_id: UUID | None = Query(None),
+    department_id: UUID | None = Query(None),
+    reporting_manager_id: UUID | None = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     pagination: PaginationParams = Depends(PaginationParams),
@@ -78,9 +79,10 @@ async def list_users(
         email=email,
         emp_id=emp_id,
         is_active=is_active,
-        is_verified=is_verified,
         is_first_login=is_first_login,
         role_id=role_id,
+        department_id=department_id,
+        reporting_manager_id=reporting_manager_id,
         sort_by=sort_by,
         sort_order=sort_order,
     )

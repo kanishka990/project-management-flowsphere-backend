@@ -52,9 +52,7 @@ def create_access_token(user: User) -> str:
             "id": str(user.id),
             "emp_id": user.emp_id,
             "email": user.email,
-            "first_name": user.first_name,
-            "middle_name": user.middle_name,
-            "last_name": user.last_name,
+            "full_name": user.full_name,
             "is_first_login": user.is_first_login,
             "roles": [
                 {

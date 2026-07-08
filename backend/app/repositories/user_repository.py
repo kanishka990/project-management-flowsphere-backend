@@ -42,9 +42,10 @@ class UserRepository(BaseRepository):
         page_size: int,
         search: str | None = None,
         is_active: bool | None = None,
-        is_verified: bool | None = None,
         is_first_login: bool | None = None,
         role_id: UUID | None = None,
+        department_id: UUID | None = None,
+        reporting_manager_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ): 
@@ -58,9 +59,7 @@ class UserRepository(BaseRepository):
                 or_(
                     func.lower(User.emp_id).like(query_expr),
                     func.lower(User.email).like(query_expr),
-                    func.lower(User.first_name).like(query_expr),
-                    func.lower(User.middle_name).like(query_expr),
-                    func.lower(User.last_name).like(query_expr),
+                    func.lower(User.full_name).like(query_expr),
                     func.lower(User.phone_number).like(query_expr),
                 )
             )
@@ -68,20 +67,23 @@ class UserRepository(BaseRepository):
         if is_active is not None:
             stmt = stmt.where(User.is_active == is_active)
 
-        if is_verified is not None:
-            stmt = stmt.where(User.is_verified == is_verified)
-
         if is_first_login is not None:
             stmt = stmt.where(User.is_first_login == is_first_login)
 
         if role_id is not None:
             stmt = stmt.join(user_roles).where(user_roles.c.role_id == role_id)
 
+        if department_id is not None:
+            stmt = stmt.where(User.department_id == department_id)
+
+        if reporting_manager_id is not None:
+            stmt = stmt.where(User.reporting_manager_id == reporting_manager_id)
+
         sort_mapping = {
             "created_at": User.created_at,
             "updated_at": User.updated_at,
             "emp_id": User.emp_id,
-            "first_name": User.first_name,
+            "full_name": User.full_name,
         }
         order_column = sort_mapping.get(sort_by, User.created_at)
         stmt = stmt.order_by(order_column.desc() if sort_order == "desc" else order_column.asc())
@@ -97,14 +99,14 @@ class UserRepository(BaseRepository):
         user = User(
             emp_id=emp_id,
             email=user_data.email.lower(),
-            first_name=user_data.first_name,
-            middle_name=user_data.middle_name,
-            last_name=user_data.last_name,
+            full_name=user_data.full_name,
             phone_number=user_data.phone_number,
             hashed_password=hashed_password,
             created_by=created_by,
             updated_by=created_by,
             is_first_login=True if is_first_login is None else is_first_login,
+            department_id=user_data.department_id,
+            reporting_manager_id=user_data.reporting_manager_id,
         )
         self.session.add(user)
         await self.session.flush()

@@ -90,9 +90,10 @@ class UserService:
         email: str | None = None,
         emp_id: str | None = None,
         is_active: bool | None = None,
-        is_verified: bool | None = None,
         is_first_login: bool | None = None,
         role_id: UUID | None = None,
+        department_id: UUID | None = None,
+        reporting_manager_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ):
@@ -103,9 +104,10 @@ class UserService:
             page_size=page_size,
             search=search_term,
             is_active=is_active,
-            is_verified=is_verified,
             is_first_login=is_first_login,
             role_id=role_id,
+            department_id=department_id,
+            reporting_manager_id=reporting_manager_id,
             sort_by=sort_by,
             sort_order=sort_order,
         )

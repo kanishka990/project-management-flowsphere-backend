@@ -10,10 +10,10 @@ from app.schemas.permission_schema import PermissionResponse
 # 1. The Base Schema (Shared properties)
 class UserBase(BaseModel):
     email: EmailStr
-    first_name: str
-    middle_name: Optional[str] = None
-    last_name: Optional[str] = None
+    full_name: str
     phone_number: str
+    department_id: UUID
+    reporting_manager_id: Optional[UUID] = None
 
 # 2. The Create Schema (Used when registering a new user)
 class UserCreate(UserBase):
@@ -26,16 +26,17 @@ class UserCreate(UserBase):
 
 # 3. The Update Schema (Used for editing profiles)
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    last_name: Optional[str] = None
+    full_name: Optional[str] = None
     phone_number: Optional[str] = None
+    department_id: Optional[UUID] = None
+    reporting_manager_id: Optional[UUID] = None
+
+from pydantic import computed_field
 
 # 4. The Response Schema (Used when returning data to the frontend)
 class UserResponse(UserBase):           
     emp_id: str         
     is_active: bool
-    is_verified: bool
     is_first_login: bool
     
     # Audit fields
@@ -44,7 +45,19 @@ class UserResponse(UserBase):
 
     # Composition: This is the correct way to attach roles and permission!
     roles: list[role_schema.RoleResponse] = []
-    permissions: list[PermissionResponse] = []
+    
+    @computed_field
+    @property
+    def permissions(self) -> list[PermissionResponse]:
+        """
+        Dynamically calculates the flattened, unique list of permissions 
+        assigned to this user through their roles during serialization.
+        """
+        unique_perms = {}
+        for role in self.roles:
+            for perm in role.permissions:
+                unique_perms[perm.id] = perm
+        return list(unique_perms.values())
     
     model_config = ConfigDict(from_attributes=True)
 
