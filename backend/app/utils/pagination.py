@@ -38,7 +38,10 @@ async def paginate(
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> tuple[list[Any], int, int]:
     offset, limit = get_pagination_bounds(page, page_size)
-    count_stmt = Select(func.count()).select_from(statement.subquery())
+    
+    from sqlalchemy import select
+    count_stmt = select(func.count()).select_from(statement.subquery())
+
     total = await session.scalar(count_stmt)
     paged_stmt = statement.offset(offset).limit(limit)
     results = await session.scalars(paged_stmt)
@@ -60,3 +63,16 @@ def format_pagination_response(
         "total": total,
         "pages": pages,
     }
+
+from typing import Any
+from pydantic import BaseModel, ConfigDict
+
+
+class PaginationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    items: list[Any]
+    page: int
+    page_size: int
+    total: int
+    pages: int
