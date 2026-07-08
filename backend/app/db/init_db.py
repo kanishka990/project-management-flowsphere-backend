@@ -81,7 +81,8 @@ async def init_db(session: AsyncSession):
                 action = perm_code.split(":")[-1]
                 p_stmt = insert(Permission).values(
                     id=uuid.uuid4(), code=perm_code, action=action, 
-                    description=f"Can {action} {perm_code.split(':')[0]}", submenu_id=submenu_id
+                    description=f"Can {action} {perm_code.split(':')[0]}", submenu_id=submenu_id,
+                    is_deleted=False
                 )
                 p_stmt = p_stmt.on_conflict_do_update(
                     index_elements=['code'],
@@ -91,7 +92,7 @@ async def init_db(session: AsyncSession):
 
     # 2. UPSERT ROLES
     for r_data in DEFAULT_ROLES:
-        r_stmt = insert(Role).values(id=uuid.uuid4(), name=r_data["name"], description=r_data["description"])
+        r_stmt = insert(Role).values(id=uuid.uuid4(), name=r_data["name"], description=r_data["description"], is_deleted=False)
         r_stmt = r_stmt.on_conflict_do_update(
             index_elements=['name'], set_=dict(description=r_stmt.excluded.description)
         )

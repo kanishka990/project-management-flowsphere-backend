@@ -64,14 +64,14 @@ class User(Base, FullAuditMixin):
         back_populates="users",
     )
     task_assignments: Mapped[list["TaskAssignment"]] = relationship(
-    "TaskAssignment",
-    foreign_keys="TaskAssignment.employee_id",
-    lazy="selectin",
-)
+        "TaskAssignment",
+        foreign_keys="TaskAssignment.employee_id",
+        lazy="selectin",
+    )
 
-timesheets: Mapped[list["Timesheet"]] = relationship(
-    "Timesheet",
-    foreign_keys="Timesheet.employee_id",
-    back_populates="employee",
-    lazy="selectin",
-)
+    timesheets: Mapped[list["Timesheet"]] = relationship(
+        "Timesheet",
+        foreign_keys="Timesheet.employee_id",
+        back_populates="employee",
+        lazy="selectin",
+    )
