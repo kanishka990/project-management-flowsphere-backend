@@ -19,6 +19,11 @@ from app.api.v1.routers.project import router as project_router
 from app.api.v1.routers.task import router as task_router
 from app.api.v1.routers.timesheets import router as timesheet_router
 
+<<<<<<< HEAD
+=======
+from app.api.v1.routers.dashboard import router as dashboard_router
+
+>>>>>>> 43c8ed3 (Add dashboard module)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,7 +58,13 @@ def create_app() -> FastAPI:
     app.include_router(submenus_router, prefix="/api/v1")
     app.include_router(project_router, prefix="/api/v1")
     app.include_router(task_router, prefix="/api/v1")
+<<<<<<< HEAD
     app.include_router(timesheet_router, prefix="/api/v1")
+=======
+    
+    app.include_router(timesheet_router, prefix="/api/v1")
+    app.include_router(dashboard_router,prefix="/api/v1",)
+>>>>>>> 43c8ed3 (Add dashboard module)
 
     app.add_exception_handler(AppException, app_exception_handler)
 
