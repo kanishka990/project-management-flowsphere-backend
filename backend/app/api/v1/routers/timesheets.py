@@ -13,7 +13,7 @@ from app.repositories.task_assignment_repository import TaskAssignmentRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.timesheet_repository import TimesheetRepository
 
-from app.schemas.timesheet import (
+from app.schemas.timesheet_schema import (
     TimesheetApprove,
     TimesheetCreate,
     TimesheetListResponse,

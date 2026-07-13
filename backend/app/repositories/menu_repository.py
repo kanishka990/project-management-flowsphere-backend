@@ -9,13 +9,13 @@ from app.repositories.base_repository import BaseRepository
 class MenuRepository(BaseRepository):
     
     async def get_by_id(self, menu_id: UUID) -> Menu | None:
-        stmt = select(Menu).where(Menu.id == menu_id).options(
+        stmt = select(Menu).where(Menu.id == menu_id, Menu.is_deleted == False).options(
             selectinload(Menu.submenus)
         )
         return await self.session.scalar(stmt)
 
     async def list(self) -> list[Menu]:
-        stmt = select(Menu).options(
+        stmt = select(Menu).where(Menu.is_deleted == False).options(
             selectinload(Menu.submenus)
         ).order_by(Menu.code.asc())
         
@@ -23,7 +23,7 @@ class MenuRepository(BaseRepository):
         return list(result.unique().all())
 
     async def create(self, payload: MenuCreate) -> Menu:
-        new_code = await self._generate_next_code(Menu, "MNU")
+        new_code = await self._generate_next_code(Menu, "code", "MNU")
         
         menu = Menu(
             code=new_code, 
@@ -34,9 +34,11 @@ class MenuRepository(BaseRepository):
         await self.session.refresh(menu)
         return menu
 
+    _UPDATABLE_FIELDS = frozenset({"name", "updated_by"})
+
     async def update(self, menu: Menu, **kwargs) -> Menu:
         for key, value in kwargs.items():
-            if hasattr(menu, key) and value is not None:
+            if key in self._UPDATABLE_FIELDS:
                 setattr(menu, key, value)
         await self.session.flush()
         await self.session.refresh(menu)

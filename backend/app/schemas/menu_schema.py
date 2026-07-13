@@ -10,8 +10,10 @@ class MenuCreate(MenuBase):
 class MenuUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
 
-class MenuResponse(MenuBase):
+class MenuResponse(BaseModel):
     id: UUID
     code: str
+    name: str
 
     model_config = ConfigDict(from_attributes=True)
+

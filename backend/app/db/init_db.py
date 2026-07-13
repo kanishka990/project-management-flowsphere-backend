@@ -2,6 +2,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.user_model import User
 from app.models.role_model import Role
@@ -101,7 +102,7 @@ async def init_db(session: AsyncSession):
     await session.commit()
 
     # 3. ASSIGN PERMISSIONS TO ROLES
-    all_roles = (await session.scalars(select(Role))).all()
+    all_roles = (await session.scalars(select(Role).options(selectinload(Role.permissions)))).all()
     all_perms = (await session.scalars(select(Permission))).all()
     roles_map = {r.name: r for r in all_roles}
 
@@ -124,7 +125,7 @@ async def init_db(session: AsyncSession):
 
     # 4. UPSERT DEFAULT SUPERADMIN USER (Using correct format)
     admin_emp_id = "EMP000001"
-    stmt = select(User).where(User.emp_id == admin_emp_id)
+    stmt = select(User).where(User.emp_id == admin_emp_id).options(selectinload(User.roles))
     admin_user = (await session.execute(stmt)).scalar_one_or_none()
 
     if not admin_user:
@@ -135,7 +136,7 @@ async def init_db(session: AsyncSession):
             email="admin@company.com",
             full_name="System Administrator",
             phone_number="9876543210",
-            hashed_password=hash_password("Password@123!"),
+            hashed_password=await hash_password("Password@123!"),
             is_active=True,
             is_first_login=False,
             department_id=sys_dept_id 

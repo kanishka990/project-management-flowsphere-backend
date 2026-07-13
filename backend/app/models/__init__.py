@@ -10,6 +10,8 @@ from .project_model import Project
 from .task_model import Task
 from .task_assignment_model import TaskAssignment
 from .timesheet_model import Timesheet
+from .email_verification_token_model import EmailVerificationToken
+from .password_reset_token_model import PasswordResetToken
 
 __all__ = [
     "Base",
@@ -25,4 +27,6 @@ __all__ = [
     "Task",
     "TaskAssignment",
     "Timesheet",
+    "EmailVerificationToken",
+    "PasswordResetToken"
 ]

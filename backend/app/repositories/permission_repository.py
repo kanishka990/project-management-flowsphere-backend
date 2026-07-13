@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from uuid import UUID
 
+from app.repositories.base_repository import BaseRepository
 from app.models.permission_model import Permission
 from app.models.role_model import Role
 from app.models.user_model import User
@@ -11,14 +12,14 @@ from app.models.associations_model import role_permissions, user_roles
 from app.schemas.permission_schema import PermissionCreate
 from app.utils.pagination import paginate
 
-class PermissionRepository:
+class PermissionRepository(BaseRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session)
 
     async def get_by_id(self, permission_id: UUID) -> Permission | None:
         stmt = (
             select(Permission)
-            .where(Permission.id == permission_id)
+            .where(Permission.id == permission_id, Permission.is_deleted == False)
             .options(
                 selectinload(Permission.roles),
                 selectinload(Permission.submenu)
@@ -27,10 +28,17 @@ class PermissionRepository:
         return await self.session.scalar(stmt)
 
     async def get_by_code(self, code: str) -> Permission | None:
-        stmt = select(Permission).where(func.lower(Permission.code) == code.lower())
+        stmt = (
+            select(Permission)
+            .where(func.lower(Permission.code) == code.lower(), Permission.is_deleted == False)
+            .options(
+                selectinload(Permission.roles),
+                selectinload(Permission.submenu)
+            )
+        )
         return await self.session.scalar(stmt)
 
-    async def list(
+    async def get_all(
         self,
         search: str | None = None,
         submenu_id: UUID | None = None,
@@ -39,7 +47,7 @@ class PermissionRepository:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Permission], int, int]:
-        stmt = select(Permission).options(
+        stmt = select(Permission).where(Permission.is_deleted == False).options(
             selectinload(Permission.roles),
             selectinload(Permission.submenu)
         )
@@ -48,8 +56,7 @@ class PermissionRepository:
             stmt = stmt.where(func.lower(Permission.code).like(query))
         if submenu_id:
             stmt = stmt.where(Permission.submenu_id == submenu_id)
-        order_column = Permission.created_at if sort_by == "created_at" else Permission.updated_at
-        stmt = stmt.order_by(order_column.desc() if sort_order == "desc" else order_column.asc())
+        stmt = self._apply_sorting(stmt, Permission, sort_by, sort_order)
         return await paginate(
             session=self.session,
             statement=stmt,
@@ -57,36 +64,11 @@ class PermissionRepository:
             page_size=page_size,
         )
 
-    async def _generate_next_code(self, prefix: str = "PRM") -> str:
-        stmt = (
-            select(Permission.code)
-            .where(Permission.code.like(f"{prefix}%"))
-            .order_by(Permission.code.desc())
-            .limit(1)
-        )
-        last_code = await self.session.scalar(stmt)
-        if last_code and last_code.startswith(prefix):
-            next_number = int(last_code.replace(prefix, "")) + 1
-        else:
-            next_number = 1
-        return f"{prefix}{next_number:06d}"
-
-    async def create(self, payload: PermissionCreate) -> Permission:
-        permission = Permission(
-            code=await self._generate_next_code("PRM"),
-            action=payload.action.lower(),
-            description=payload.description,
-            submenu_id=payload.submenu_id,
-        )
-        self.session.add(permission)
-        await self.session.flush()
-        await self.session.refresh(permission)
-        return permission
+    _UPDATABLE_FIELDS = frozenset({"code", "action", "description", "submenu_id", "updated_by"})
 
     async def update(self, permission: Permission, **kwargs) -> Permission:
         for key, value in kwargs.items():
-            # Prevent overriding relationships directly via kwargs if needed
-            if hasattr(permission, key) and value is not None:
+            if key in self._UPDATABLE_FIELDS:
                 setattr(permission, key, value)
         await self.session.flush()
         await self.session.refresh(permission)
@@ -116,10 +98,9 @@ class PermissionRepository:
         return await self.session.scalar(stmt) > 0
 
     async def create(self, payload: PermissionCreate) -> Permission:
-        new_code = await self._generate_next_code(Permission, "PRM")
-        
         permission = Permission(
-            code=new_code,
+            code=payload.action,
+            action=payload.action,
             description=payload.description,
             submenu_id=payload.submenu_id 
         )

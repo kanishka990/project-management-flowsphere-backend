@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
-    CORS_ALLOW_METHODS: list[str] = ["*"]
+    CORS_ALLOW_METHODS: list[str] = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     CORS_ALLOW_HEADERS: list[str] = ["*"]
     CORS_MAX_AGE: int = 600
 
@@ -48,6 +48,15 @@ class Settings(BaseSettings):
             database=self.DB_NAME,
         )
         return url.render_as_string(hide_password=False)
+    #SMTP Configuration
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int | None = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
+
+    # Frontend Configuration
+    FRONTEND_URL: str = "http://localhost:5173"
     
 @lru_cache()
 def get_settings() -> Settings:

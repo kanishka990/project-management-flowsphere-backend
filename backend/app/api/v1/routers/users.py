@@ -26,7 +26,6 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(
-        db=db,
         user_repo=UserRepository(db),
         role_repo=RoleRepository(db),
     )
@@ -60,8 +59,8 @@ async def create_user(
 )
 async def list_users(
     search: str | None = Query(None),
-    email: str | None = Query(None),       # Added for direct email lookup
-    emp_id: str | None = Query(None),      # Added for direct employee ID lookup
+    email: str | None = Query(None),       
+    emp_id: str | None = Query(None),     
     is_active: bool | None = Query(None),
     is_first_login: bool | None = Query(None),
     role_id: UUID | None = Query(None),
@@ -85,6 +84,24 @@ async def list_users(
         reporting_manager_id=reporting_manager_id,
         sort_by=sort_by,
         sort_order=sort_order,
+    )
+    return format_pagination_response(items, pagination.page, actual_page_size, total)
+
+
+@router.get(
+    "/project-managers",
+    response_model=UserListResponse,
+    dependencies=[Depends(get_current_active_user)],
+)
+async def list_project_managers(
+    search: str | None = Query(None),
+    pagination: PaginationParams = Depends(PaginationParams),
+    user_service: UserService = Depends(get_user_service),
+):
+    items, total, actual_page_size = await user_service.list_project_managers(
+        page=pagination.page,
+        page_size=pagination.page_size,
+        search=search,
     )
     return format_pagination_response(items, pagination.page, actual_page_size, total)
 
@@ -146,9 +163,10 @@ async def update_user(
 )
 async def delete_user(
     user_id: UUID,
+    current_user=Depends(get_current_active_user),
     user_service: UserService = Depends(get_user_service),
 ):
-    await user_service.soft_delete_user(user_id)
+    await user_service.soft_delete_user(user_id, deleted_by=current_user.id)
     return {}
 
 

@@ -4,7 +4,8 @@ from uuid import UUID as UUIDType
 import uuid
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import String, UUID, ForeignKey, CheckConstraint
+from sqlalchemy import String, UUID, ForeignKey, CheckConstraint, DateTime
+from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -30,6 +31,8 @@ class User(Base, FullAuditMixin):
     hashed_password: Mapped[str] = mapped_column(String)
     is_active: Mapped[bool] = mapped_column(default=True)
     is_first_login: Mapped[bool] = mapped_column(default=True)
+    failed_login_attempts: Mapped[int] = mapped_column(default=0)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     department_id: Mapped[UUIDType] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("departments.id", ondelete="RESTRICT"),
@@ -50,13 +53,14 @@ class User(Base, FullAuditMixin):
     # Enforce at the DB level that a user cannot be their own manager
     __table_args__ = (
         CheckConstraint("id != reporting_manager_id", name="check_not_own_manager"),
+        CheckConstraint("phone_number ~ '^\\+?[0-9]{10,15}$'", name="check_valid_phone_format"),
     )
 
     roles: Mapped[list[Role]] = relationship(
         "Role",
         secondary=user_roles,
         back_populates="users",
-        lazy="selectin",
+        lazy="raise",
     )
 
     department: Mapped["Department"] = relationship(
@@ -66,6 +70,7 @@ class User(Base, FullAuditMixin):
     task_assignments: Mapped[list["TaskAssignment"]] = relationship(
         "TaskAssignment",
         foreign_keys="TaskAssignment.employee_id",
+        back_populates="employee",
         lazy="selectin",
     )
 
@@ -75,3 +80,6 @@ class User(Base, FullAuditMixin):
         back_populates="employee",
         lazy="selectin",
     )
+
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email='{self.email}', emp_id='{self.emp_id}')>"

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.task_model import Task
-from app.schemas.task import TaskCreate
+from app.schemas.task_schema import TaskCreate
 from app.utils.pagination import paginate
 from app.repositories.base_repository import BaseRepository
 

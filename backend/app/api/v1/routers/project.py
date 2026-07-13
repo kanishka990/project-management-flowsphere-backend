@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.repositories.project_repository import ProjectRepository
 from app.services.project_service import ProjectService
 
-from app.schemas.project import (
+from app.schemas.project_schema import (
     ProjectCreate,
     ProjectUpdate,
     ProjectResponse,

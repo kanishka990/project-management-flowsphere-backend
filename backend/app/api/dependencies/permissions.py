@@ -7,7 +7,7 @@ class PermissionChecker:
         self.required_permissions = [p.lower() for p in required_permissions]
         self.match_all = match_all
 
-    def __call__(self, current_user=Depends(get_current_active_user)):
+    async def __call__(self, current_user=Depends(get_current_active_user)):
         if any((role.name or "").lower() == "superadmin" for role in (current_user.roles or [])):
             return current_user
 

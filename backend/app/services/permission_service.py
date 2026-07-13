@@ -8,11 +8,9 @@ from app.schemas.permission_schema import PermissionCreate, PermissionUpdate
 class PermissionService:
     def __init__(
         self,
-        db: AsyncSession,
         permission_repo: PermissionRepository,
         role_repo: RoleRepository,
     ):
-        self.db = db
         self.permission_repo = permission_repo
         self.role_repo = role_repo
 
@@ -33,7 +31,7 @@ class PermissionService:
         page: int = 1,
         page_size: int = 20,
     ):
-        return await self.permission_repo.list(
+        return await self.permission_repo.get_all(
             search=search,
             sort_by=sort_by,
             sort_order=sort_order,
@@ -59,5 +57,6 @@ class PermissionService:
         permission = await self.get_permission_by_id(permission_id)
         return await self.permission_repo.get_roles(permission)
 
-    async def get_users(self, permission_id: int):
+    async def get_users(self, permission_id: UUID):
         return await self.permission_repo.get_users(permission_id)
+

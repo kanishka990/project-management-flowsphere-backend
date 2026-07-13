@@ -5,8 +5,7 @@ from app.repositories.submenu_repository import SubMenuRepository
 from app.schemas.submenu_schema import SubMenuCreate, SubMenuUpdate
 
 class SubMenuService:
-    def __init__(self, db: AsyncSession, submenu_repo: SubMenuRepository):
-        self.db = db
+    def __init__(self, submenu_repo: SubMenuRepository):
         self.submenu_repo = submenu_repo
 
     async def create_submenu(self, payload: SubMenuCreate):
@@ -32,3 +31,4 @@ class SubMenuService:
     async def delete_submenu(self, submenu_id: UUID):
         submenu = await self.get_submenu_by_id(submenu_id)
         await self.submenu_repo.delete(submenu)
+

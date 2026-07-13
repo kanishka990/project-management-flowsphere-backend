@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.timesheet_model import Timesheet
-from app.schemas.timesheet import TimesheetCreate
+from app.schemas.timesheet_schema import TimesheetCreate
 from app.utils.pagination import paginate
 from app.repositories.base_repository import BaseRepository
 

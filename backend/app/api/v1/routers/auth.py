@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
+from app.core.rate_limiter import limiter
 
+from app.utils.email import send_reset_password_email
 from app.core.security import create_access_token, create_refresh_token
 from app.schemas.user_schema import (
     LoginRequest,
@@ -8,6 +10,8 @@ from app.schemas.user_schema import (
     UserResponse,
     UserPasswordChange,
     PasswordResetRequest,
+    UserSelfRegister,
+    EmailVerificationResponse,
 )
 
 from app.api.dependencies.auth_dependencies import get_user_service, get_current_active_user
@@ -17,7 +21,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     credentials: LoginRequest,
     user_service: UserService = Depends(get_user_service),
 ):
@@ -66,28 +72,73 @@ async def change_password(
 
 
 @router.post("/forget-password", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("3/hour")
 async def forget_password(
+    request: Request,
     payload: PasswordResetRequest,
+    background_tasks: BackgroundTasks,  # <--- Inject BackgroundTasks
     user_service: UserService = Depends(get_user_service),
 ):
     """
     Initiate a password reset flow for unauthenticated users.
     """
-    await user_service.reset_password(payload.email)
-    return {"detail": "If the email exists, password reset instructions have been sent."}
+    token = await user_service.request_password_reset(payload.email)
+    
+    # If the user exists and a token was generated, send the email
+    if token:
+        background_tasks.add_task(send_reset_password_email, payload.email, token)
+    from app.core.config import get_settings
+    response_data = {"detail": "If the email exists, password reset instructions have been sent."}
+    if get_settings().DEBUG and token:
+        response_data["token"] = token  # For development purposes only
+    return response_data
+
+from app.schemas.user_schema import PasswordResetConfirm
+
+@router.post("/reset-password", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("3/hour")
+async def reset_password(
+    request: Request,
+    payload: PasswordResetConfirm,
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    Reset password using a token.
+    """
+    await user_service.reset_password(payload.token, payload.new_password)
+    return {"detail": "Password has been reset successfully."}
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=EmailVerificationResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/hour")
 async def register(
-    payload: UserCreate,
+    request: Request,
+    payload: UserSelfRegister,
     user_service: UserService = Depends(get_user_service),
 ):
     """
     Self-register a new user.
     These users should not be forced to change password on first login.
     """
-    user = await user_service.create_user(
+    user, token = await user_service.create_user(
         payload,
         require_password_change=False,
     )
+    from app.core.config import get_settings
+    response = EmailVerificationResponse(
+        detail="Registration successful. Please check your email to verify your account."
+    )
+    if get_settings().DEBUG:
+        response.token = token
+    return response
+
+@router.get("/verify-email", response_model=UserResponse)
+async def verify_email(
+    token: str,
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    Verify user's email using the token sent to their email.
+    """
+    user = await user_service.verify_email(token)
     return user
