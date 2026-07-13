@@ -14,8 +14,7 @@ class DashboardRepository:
         stmt = (
             select(
                 User.emp_id,
-                User.first_name,
-                User.last_name,
+                User.full_name,
                 func.count(Timesheet.id).label("assigned_tasks"),
                 func.sum(
                     func.case(
