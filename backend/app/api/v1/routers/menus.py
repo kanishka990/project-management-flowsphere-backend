@@ -10,7 +10,7 @@ from app.schemas.menu_schema import MenuCreate, MenuResponse, MenuUpdate
 router = APIRouter(prefix="/menus", tags=["Menus"])
 
 def get_menu_service(db: AsyncSession = Depends(get_db)) -> MenuService:
-    return MenuService(db, MenuRepository(db))
+    return MenuService(MenuRepository(db))
 
 @router.post(
     "/", 
@@ -45,3 +45,4 @@ async def update_menu(menu_id: UUID, payload: MenuUpdate, service: MenuService =
 async def delete_menu(menu_id: UUID, service: MenuService = Depends(get_menu_service)):
     await service.delete_menu(menu_id)
     return {}
+

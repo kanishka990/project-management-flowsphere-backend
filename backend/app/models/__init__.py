@@ -6,6 +6,12 @@ from .permission_model import Permission
 from .submenu_model import SubMenu
 from .menu_model import Menu
 from .department_model import Department
+from .project_model import Project
+from .task_model import Task
+from .task_assignment_model import TaskAssignment
+from .timesheet_model import Timesheet
+from .email_verification_token_model import EmailVerificationToken
+from .password_reset_token_model import PasswordResetToken
 
 __all__ = [
     "Base",
@@ -17,4 +23,10 @@ __all__ = [
     "SubMenu",
     "Menu",
     "Department",
+    "Project",
+    "Task",
+    "TaskAssignment",
+    "Timesheet",
+    "EmailVerificationToken",
+    "PasswordResetToken"
 ]

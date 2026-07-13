@@ -70,6 +70,7 @@ class TaskAssignment(Base, FullAuditMixin):
     employee: Mapped["User"] = relationship(
         "User",
         foreign_keys=[employee_id],
+        back_populates="task_assignments",
         lazy="selectin",
     )
 

@@ -20,6 +20,7 @@ from app.api.v1.routers.task import router as task_router
 from app.api.v1.routers.timesheets import router as timesheet_router
 
 from app.api.v1.routers.dashboard import router as dashboard_router
+from app.api.v1.routers.departments import router as departments_router
 
 
 @asynccontextmanager
@@ -58,8 +59,28 @@ def create_app() -> FastAPI:
     
     app.include_router(timesheet_router, prefix="/api/v1")
     app.include_router(dashboard_router,prefix="/api/v1",)
+    app.include_router(departments_router, prefix="/api/v1")
 
     app.add_exception_handler(AppException, app_exception_handler)
+
+    from slowapi import _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from app.core.rate_limiter import limiter
+
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    from sqlalchemy.exc import SQLAlchemyError
+    
+    async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+        import logging
+        logging.getLogger("uvicorn.error").error(f"Database error: {str(exc)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An internal database error occurred."},
+        )
+    
+    app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 
     add_middleware(app, settings)
     add_basic_routes(app)

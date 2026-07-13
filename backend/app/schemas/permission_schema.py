@@ -14,9 +14,12 @@ class PermissionUpdate(BaseModel):
     description: Optional[str] = None
     submenu_id: Optional[UUID] = None
 
-class PermissionResponse(PermissionBase):
+class PermissionResponse(BaseModel):
     id: UUID
     code: str
+    description: Optional[str] = None
+    submenu_id: Optional[UUID] = None
+    action: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,3 +29,4 @@ class PermissionListResponse(BaseModel):
     page_size: int
     total: int
     pages: int
+

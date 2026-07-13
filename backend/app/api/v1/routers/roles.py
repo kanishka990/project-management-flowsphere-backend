@@ -19,7 +19,6 @@ router = APIRouter(prefix="/roles", tags=["Roles"])
 
 def get_role_service(db: AsyncSession = Depends(get_db)) -> RoleService:
     return RoleService(
-        db=db,
         role_repo=RoleRepository(db),
         permission_repo=PermissionRepository(db),
     )
@@ -58,7 +57,6 @@ async def list_roles(
         page_size=pagination.page_size,
     )
     return format_pagination_response(items, pagination.page, actual_page_size, total)
-
 
 @router.get(
     "/{role_id}",

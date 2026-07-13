@@ -10,7 +10,7 @@ from app.core.exceptions import (
 )
 
 from app.repositories.project_repository import ProjectRepository
-from app.schemas.project import (
+from app.schemas.project_schema import (
     ProjectCreate,
     ProjectUpdate,
 )

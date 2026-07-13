@@ -12,11 +12,15 @@ from app.core.exceptions import AppException
 
 security = HTTPBearer()
 
+from app.repositories.email_verification_token_repository import EmailVerificationTokenRepository
+from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
+
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(
-        db=db,
         user_repo=UserRepository(db),
         role_repo=RoleRepository(db),
+        email_verification_repo=EmailVerificationTokenRepository(db),
+        password_reset_repo=PasswordResetTokenRepository(db),
     )
 
 async def get_current_user(
@@ -46,12 +50,7 @@ async def get_current_user(
             detail="User not found",
         )
     
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="User not found"
-        )
-        
+
     return user
 
 async def get_current_active_user(

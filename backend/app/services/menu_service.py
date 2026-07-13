@@ -5,8 +5,7 @@ from app.repositories.menu_repository import MenuRepository
 from app.schemas.menu_schema import MenuCreate, MenuUpdate
 
 class MenuService:
-    def __init__(self, db: AsyncSession, menu_repo: MenuRepository):
-        self.db = db
+    def __init__(self, menu_repo: MenuRepository):
         self.menu_repo = menu_repo
 
     async def create_menu(self, payload: MenuCreate):
@@ -31,3 +30,4 @@ class MenuService:
     async def delete_menu(self, menu_id: UUID):
         menu = await self.get_menu_by_id(menu_id)
         await self.menu_repo.delete(menu)
+

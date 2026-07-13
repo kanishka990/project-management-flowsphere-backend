@@ -33,10 +33,13 @@ class Permission(Base, FullAuditMixin):
         "Role",
         secondary=role_permissions,
         back_populates="permissions",
-        lazy="selectin",
+        lazy="raise",
     )
     
     submenu: Mapped[Optional["SubMenu"]] = relationship(
         "SubMenu", 
         back_populates="permissions"
     )
+
+    def __repr__(self) -> str:
+        return f"<Permission(id={self.id}, code='{self.code}')>"

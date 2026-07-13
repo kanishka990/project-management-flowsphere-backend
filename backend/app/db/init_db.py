@@ -2,6 +2,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.user_model import User
 from app.models.role_model import Role
@@ -81,7 +82,8 @@ async def init_db(session: AsyncSession):
                 action = perm_code.split(":")[-1]
                 p_stmt = insert(Permission).values(
                     id=uuid.uuid4(), code=perm_code, action=action, 
-                    description=f"Can {action} {perm_code.split(':')[0]}", submenu_id=submenu_id
+                    description=f"Can {action} {perm_code.split(':')[0]}", submenu_id=submenu_id,
+                    is_deleted=False
                 )
                 p_stmt = p_stmt.on_conflict_do_update(
                     index_elements=['code'],
@@ -91,7 +93,7 @@ async def init_db(session: AsyncSession):
 
     # 2. UPSERT ROLES
     for r_data in DEFAULT_ROLES:
-        r_stmt = insert(Role).values(id=uuid.uuid4(), name=r_data["name"], description=r_data["description"])
+        r_stmt = insert(Role).values(id=uuid.uuid4(), name=r_data["name"], description=r_data["description"], is_deleted=False)
         r_stmt = r_stmt.on_conflict_do_update(
             index_elements=['name'], set_=dict(description=r_stmt.excluded.description)
         )
@@ -100,7 +102,7 @@ async def init_db(session: AsyncSession):
     await session.commit()
 
     # 3. ASSIGN PERMISSIONS TO ROLES
-    all_roles = (await session.scalars(select(Role))).all()
+    all_roles = (await session.scalars(select(Role).options(selectinload(Role.permissions)))).all()
     all_perms = (await session.scalars(select(Permission))).all()
     roles_map = {r.name: r for r in all_roles}
 
@@ -123,7 +125,7 @@ async def init_db(session: AsyncSession):
 
     # 4. UPSERT DEFAULT SUPERADMIN USER (Using correct format)
     admin_emp_id = "EMP000001"
-    stmt = select(User).where(User.emp_id == admin_emp_id)
+    stmt = select(User).where(User.emp_id == admin_emp_id).options(selectinload(User.roles))
     admin_user = (await session.execute(stmt)).scalar_one_or_none()
 
     if not admin_user:
@@ -134,7 +136,7 @@ async def init_db(session: AsyncSession):
             email="admin@company.com",
             full_name="System Administrator",
             phone_number="9876543210",
-            hashed_password=hash_password("Password@123!"),
+            hashed_password=await hash_password("Password@123!"),
             is_active=True,
             is_first_login=False,
             department_id=sys_dept_id 

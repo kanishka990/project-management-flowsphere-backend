@@ -16,7 +16,7 @@ from app.repositories.task_assignment_repository import (
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.task_repository import TaskRepository
 
-from app.schemas.timesheet import (
+from app.schemas.timesheet_schema import (
     TimesheetCreate,
     TimesheetUpdate,
 )
