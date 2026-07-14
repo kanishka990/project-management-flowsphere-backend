@@ -10,13 +10,19 @@ from app.schemas.permission_schema import PermissionResponse
 import re
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 
+class ManagerBasicResponse(BaseModel):
+    id: UUID
+    name: str = Field(validation_alias="full_name")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
 # 1. The Base Schema (Shared properties)
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=15)
     department_id: UUID
-    reporting_manager_id: Optional[UUID] = None
+    reporting_manager: Optional[ManagerBasicResponse] = None
 
     @field_validator("phone_number")
     @classmethod
@@ -60,7 +66,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     department_id: Optional[UUID] = None
-    reporting_manager_id: Optional[UUID] = None
+    reporting_manager: Optional[ManagerBasicResponse] = None
 
 from pydantic import computed_field
 
@@ -71,7 +77,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     department_id: UUID
-    reporting_manager_id: Optional[UUID] = None
+    reporting_manager: Optional[ManagerBasicResponse] = None
     
     emp_id: str         
     is_active: bool
@@ -162,4 +168,3 @@ class PasswordResetConfirm(BaseModel):
         if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
             raise ValueError("Password must contain at least one special character")
         return v
-

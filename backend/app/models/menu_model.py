@@ -11,8 +11,9 @@ from sqlalchemy import String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.db.mixins import FullAuditMixin
 
-class Menu(Base):
+class Menu(Base, FullAuditMixin):
     __tablename__ = "menus"
 
     id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

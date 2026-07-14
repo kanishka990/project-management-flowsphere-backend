@@ -19,20 +19,23 @@ class UserRepository(BaseRepository):
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         stmt = select(User).where(User.id == user_id, User.is_deleted == False).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
     async def get_by_email(self, email: str) -> User | None:
         normalized = email.lower()
         stmt = select(User).where(func.lower(User.email) == normalized, User.is_deleted == False).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
     async def get_by_emp_id(self, emp_id: str) -> User | None:
         stmt = select(User).where(User.emp_id == emp_id, User.is_deleted == False).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
@@ -50,7 +53,8 @@ class UserRepository(BaseRepository):
         sort_order: str = "desc",
     ): 
         stmt = select(User).where(User.is_deleted == False).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
 
         if search:

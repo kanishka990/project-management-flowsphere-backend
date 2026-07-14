@@ -8,10 +8,11 @@ from sqlalchemy import String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.db.mixins import FullAuditMixin
 if TYPE_CHECKING:
     from app.models.user_model import User
 
-class Department(Base):
+class Department(Base, FullAuditMixin):
     __tablename__ = "departments"
 
     id: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
