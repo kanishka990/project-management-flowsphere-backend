@@ -56,10 +56,9 @@ def create_app() -> FastAPI:
     app.include_router(submenus_router, prefix="/api/v1")
     app.include_router(project_router, prefix="/api/v1")
     app.include_router(task_router, prefix="/api/v1")
-    
+    app.include_router(departments_router, prefix="/api/v1")
     app.include_router(timesheet_router, prefix="/api/v1")
     app.include_router(dashboard_router,prefix="/api/v1",)
-    app.include_router(departments_router, prefix="/api/v1")
 
     app.add_exception_handler(AppException, app_exception_handler)
 

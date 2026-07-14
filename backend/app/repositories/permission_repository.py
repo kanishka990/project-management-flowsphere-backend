@@ -64,7 +64,7 @@ class PermissionRepository(BaseRepository):
             page_size=page_size,
         )
 
-    _UPDATABLE_FIELDS = frozenset({"code", "action", "description", "submenu_id", "updated_by"})
+    _UPDATABLE_FIELDS = frozenset({"action", "description", "submenu_id", "updated_by"})
 
     async def update(self, permission: Permission, **kwargs) -> Permission:
         for key, value in kwargs.items():
@@ -99,7 +99,7 @@ class PermissionRepository(BaseRepository):
 
     async def create(self, payload: PermissionCreate) -> Permission:
         permission = Permission(
-            code=payload.action,
+            code=payload.code,
             action=payload.action,
             description=payload.description,
             submenu_id=payload.submenu_id 

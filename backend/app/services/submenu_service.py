@@ -22,13 +22,10 @@ class SubMenuService:
 
     async def update_submenu(self, submenu_id: UUID, payload: SubMenuUpdate):
         submenu = await self.get_submenu_by_id(submenu_id)
-        return await self.submenu_repo.update(
-            submenu,
-            title=payload.title,
-            menu_id=payload.menu_id
-        )
+        updates = payload.model_dump(exclude_unset=True)
+        return await self.submenu_repo.update(submenu, **updates)
 
-    async def delete_submenu(self, submenu_id: UUID):
+    async def delete_submenu(self, submenu_id: UUID, deleted_by: UUID | None = None):
         submenu = await self.get_submenu_by_id(submenu_id)
-        await self.submenu_repo.delete(submenu)
+        await self.submenu_repo.delete(submenu, deleted_by=deleted_by)
 

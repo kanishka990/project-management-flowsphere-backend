@@ -41,11 +41,8 @@ class PermissionService:
 
     async def update_permission(self, permission_id: UUID, payload: PermissionUpdate):
         permission = await self.get_permission_by_id(permission_id)
-        return await self.permission_repo.update(
-            permission,
-            code=payload.code,
-            description=payload.description,
-        )
+        updates = payload.model_dump(exclude_unset=True)
+        return await self.permission_repo.update(permission, **updates)
 
     async def delete_permission(self, permission_id: UUID, allow_if_assigned: bool = False):
         permission = await self.get_permission_by_id(permission_id)

@@ -16,31 +16,46 @@ class SubMenuRepository(BaseRepository):
         return await self.session.scalar(stmt)
 
     async def list(self, menu_id: UUID | None = None) -> list[SubMenu]:
-        stmt = select(SubMenu).where(SubMenu.is_deleted == False).options(
-            selectinload(SubMenu.permissions)
+        stmt = (
+            select(SubMenu)
+            .where(SubMenu.is_deleted == False)
+            .options(selectinload(SubMenu.permissions))
         )
-        
+
         if menu_id:
             stmt = stmt.where(SubMenu.menu_id == menu_id)
-            
-        stmt = stmt.order_by(SubMenu.code.asc())
+
+        stmt = stmt.order_by(SubMenu.sort_order.asc(), SubMenu.title.asc())
+
         result = await self.session.scalars(stmt)
         return list(result.unique().all())
 
     async def create(self, payload: SubMenuCreate) -> SubMenu:
-        new_code = await self._generate_next_code(SubMenu, "code", "SBM")
-        
+        code = payload.code or await self._generate_next_code(SubMenu, "code", "SBM")
+
         submenu = SubMenu(
-            code=new_code,
+            code=code,
             title=payload.title,
-            menu_id=payload.menu_id
+            menu_id=payload.menu_id,
+            path=payload.path,
+            icon=payload.icon,
+            sort_order=payload.sort_order,
+            is_active=payload.is_active,
         )
         self.session.add(submenu)
         await self.session.flush()
         await self.session.refresh(submenu)
         return submenu
 
-    _UPDATABLE_FIELDS = frozenset({"title", "menu_id", "updated_by"})
+    _UPDATABLE_FIELDS = frozenset({
+        "title",
+        "menu_id",
+        "path",
+        "icon",
+        "sort_order",
+        "is_active",
+        "updated_by",
+    })
 
     async def update(self, submenu: SubMenu, **kwargs) -> SubMenu:
         for key, value in kwargs.items():
@@ -50,7 +65,7 @@ class SubMenuRepository(BaseRepository):
         await self.session.refresh(submenu)
         return submenu
 
-    async def delete(self, submenu: SubMenu) -> None:
-        await self.session.delete(submenu)
-        await self.session.flush()
+    async def delete(self, submenu: SubMenu, deleted_by: UUID | None = None) -> None:
+        submenu.is_active = False
+        await self.soft_delete(submenu, deleted_by)
 
