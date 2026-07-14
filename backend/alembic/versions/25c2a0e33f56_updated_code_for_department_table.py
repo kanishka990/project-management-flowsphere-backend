@@ -30,7 +30,14 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_departments_code'), 'departments', ['code'], unique=True)
     op.create_index(op.f('ix_departments_name'), 'departments', ['name'], unique=True)
-    op.add_column('users', sa.Column('department_id', sa.UUID(), nullable=False))
+    op.add_column(
+    "users",
+    sa.Column(
+        "department_id",
+        sa.UUID(),
+        nullable=True,
+    )
+)
     op.create_foreign_key(None, 'users', 'departments', ['department_id'], ['id'], ondelete='RESTRICT')
     # ### end Alembic commands ###
 

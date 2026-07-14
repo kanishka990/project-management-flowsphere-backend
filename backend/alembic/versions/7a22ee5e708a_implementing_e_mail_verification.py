@@ -32,7 +32,21 @@ def upgrade() -> None:
     sa.UniqueConstraint('token_hash')
     )
     op.create_index(op.f('ix_email_verification_tokens_user_id'), 'email_verification_tokens', ['user_id'], unique=False)
-    op.add_column('users', sa.Column('failed_login_attempts', sa.Integer(), nullable=False))
+    op.add_column(
+    "users",
+    sa.Column(
+        "failed_login_attempts",
+        sa.Integer(),
+        nullable=False,
+        server_default="0",
+    ),
+)
+
+    op.alter_column(
+    "users",
+    "failed_login_attempts",
+    server_default=None,
+)
     op.add_column('users', sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True))
     # ### end Alembic commands ###
 
