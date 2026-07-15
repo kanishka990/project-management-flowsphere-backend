@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from app.core.rate_limiter import limiter
 
-from app.utils.email import send_reset_password_email
+from app.utils.email import send_reset_password_email, send_verification_email
 from app.core.security import create_access_token, create_refresh_token
 from app.schemas.user_schema import (
     LoginRequest,
@@ -10,6 +10,7 @@ from app.schemas.user_schema import (
     UserResponse,
     UserPasswordChange,
     PasswordResetRequest,
+    PasswordResetConfirm,
     UserSelfRegister,
     EmailVerificationResponse,
 )
@@ -76,7 +77,7 @@ async def change_password(
 async def forget_password(
     request: Request,
     payload: PasswordResetRequest,
-    background_tasks: BackgroundTasks,  # <--- Inject BackgroundTasks
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service),
 ):
     """
@@ -92,8 +93,6 @@ async def forget_password(
     if get_settings().DEBUG and token:
         response_data["token"] = token  # For development purposes only
     return response_data
-
-from app.schemas.user_schema import PasswordResetConfirm
 
 @router.post("/reset-password", status_code=status.HTTP_202_ACCEPTED)
 @limiter.limit("3/hour")
@@ -114,16 +113,20 @@ async def reset_password(
 async def register(
     request: Request,
     payload: UserSelfRegister,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service),
 ):
     """
     Self-register a new user.
     These users should not be forced to change password on first login.
     """
-    user, token = await user_service.create_user(
+    _user, token = await user_service.create_user(
         payload,
         require_password_change=False,
     )
+    if token:
+        background_tasks.add_task(send_verification_email, payload.email, token)
+
     from app.core.config import get_settings
     response = EmailVerificationResponse(
         detail="Registration successful. Please check your email to verify your account."
