@@ -84,13 +84,11 @@ async def forget_password(
     Initiate a password reset flow for unauthenticated users.
     """
     token = await user_service.request_password_reset(payload.email)
-    
-    # If the user exists and a token was generated, send the email
-    if token:
-        background_tasks.add_task(send_reset_password_email, payload.email, token)
+
+    background_tasks.add_task(send_reset_password_email, payload.email, token)
     from app.core.config import get_settings
-    response_data = {"detail": "If the email exists, password reset instructions have been sent."}
-    if get_settings().DEBUG and token:
+    response_data = {"detail": "Password reset instructions have been sent to your email."}
+    if get_settings().DEBUG:
         response_data["token"] = token  # For development purposes only
     return response_data
 

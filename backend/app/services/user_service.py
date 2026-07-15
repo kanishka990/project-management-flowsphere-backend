@@ -136,10 +136,16 @@ class UserService:
             is_first_login=False,
         )
 
-    async def request_password_reset(self, email: str) -> str | None:
+    async def request_password_reset(self, email: str) -> str:
         user = await self.user_repo.get_by_email(email)
-        if not user or not user.is_active:
-            return None
+        if not user:
+            raise BadRequestException(
+                "Email address not found. Please check the email address or register first."
+            )
+        if not user.is_active:
+            raise BadRequestException(
+                "This account is not active. Please verify your email before requesting a password reset."
+            )
         
         if not self.password_reset_repo:
             raise ValidationException("Password reset is not configured")
