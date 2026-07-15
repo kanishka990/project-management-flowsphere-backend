@@ -11,19 +11,28 @@ from app.models.associations_model import user_roles
 from app.schemas.role_schema import RoleCreate
 from app.utils.pagination import paginate
 
-class RoleRepository:
+from app.repositories.base_repository import BaseRepository
+
+class RoleRepository(BaseRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session)
 
     async def get_by_id(self, role_id: UUID) -> Role | None:
-        stmt = select(Role).where(Role.id == role_id).options(
+        stmt = select(Role).where(Role.id == role_id, Role.is_deleted == False).options(
             selectinload(Role.permissions),
             selectinload(Role.users),
         )
         return await self.session.scalar(stmt)
 
     async def get_by_name(self, name: str) -> Role | None:
-        stmt = select(Role).where(func.lower(Role.name) == name.lower())
+        stmt = (
+            select(Role)
+            .where(func.lower(Role.name) == name.lower(), Role.is_deleted == False)
+            .options(
+                selectinload(Role.permissions),
+                selectinload(Role.users),
+            )
+        )
         return await self.session.scalar(stmt)
 
     async def list(
@@ -34,12 +43,11 @@ class RoleRepository:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Role], int, int]:
-        stmt = select(Role).options(selectinload(Role.permissions))
+        stmt = select(Role).where(Role.is_deleted == False).options(selectinload(Role.permissions))
         if search:
             query = f"%{search.strip().lower()}%"
             stmt = stmt.where(func.lower(Role.name).like(query))
-        order_column = Role.created_at if sort_by == "created_at" else Role.updated_at
-        stmt = stmt.order_by(order_column.desc() if sort_order == "desc" else order_column.asc())
+        stmt = self._apply_sorting(stmt, Role, sort_by, sort_order)
         return await paginate(
             session=self.session,
             statement=stmt,
@@ -57,9 +65,11 @@ class RoleRepository:
         await self.session.refresh(role)
         return role
 
+    _UPDATABLE_FIELDS = frozenset({"name", "description", "updated_by"})
+
     async def update(self, role: Role, **kwargs) -> Role:
         for key, value in kwargs.items():
-            if hasattr(role, key) and value is not None:
+            if key in self._UPDATABLE_FIELDS:
                 setattr(role, key, value)
         await self.session.flush()
         await self.session.refresh(role)
@@ -92,3 +102,4 @@ class RoleRepository:
     async def user_count(self, role: Role) -> int:
         stmt = select(func.count()).select_from(user_roles).where(user_roles.c.role_id == role.id)
         return await self.session.scalar(stmt)
+

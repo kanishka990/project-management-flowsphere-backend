@@ -2,6 +2,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models.user_model import User
 from app.models.role_model import Role
@@ -14,23 +15,27 @@ from app.core.security import hash_password
 # --- CATALOG DEFINITION ---
 MENUS = [
     {
-        "code": "setup", "name": "Setup & Configuration",
+        "code": "setup",
+        "name": "Setup & Configuration",
+        "path": None,
+        "icon": "settings",
+        "sort_order": 10,
         "submenus": [
             {
-                "code": "user_mgt", "title": "User Management",
+                "code": "user_mgt", "title": "User Management", "path": "/setup/users", "icon": "users", "sort_order": 10,
                 "permissions": ["users:create", "users:read", "users:update", "users:delete"]
             },
             {
-                "code": "role_mgt", "title": "Role Management",
+                "code": "role_mgt", "title": "Role Management", "path": "/setup/roles", "icon": "shield", "sort_order": 20,
                 "permissions": ["roles:create", "roles:read", "roles:update", "roles:delete"]
             },
             {
-                "code": "perm_mgt", "title": "Permission Management",
+                "code": "perm_mgt", "title": "Permission Management", "path": "/setup/permissions", "icon": "key-round", "sort_order": 30,
                 "permissions": ["permissions:create", "permissions:read", "permissions:update", "permissions:delete"]
             },
             {
-                "code": "menu_mgt", "title": "Menu Management",
-                "permissions": ["menus:create", "menus:read", "menus:update", "menus:delete", "submenus:create", "submenus:read", "submenus:delete"]
+                "code": "menu_mgt", "title": "Menu Management", "path": "/setup/menus", "icon": "panel-left", "sort_order": 40,
+                "permissions": ["menus:create", "menus:read", "menus:update", "menus:delete", "submenus:create", "submenus:read", "submenus:update", "submenus:delete"]
             }
         ]
     }
@@ -62,18 +67,52 @@ async def init_db(session: AsyncSession):
 
     # 1. UPSERT MENUS & SUBMENUS & PERMISSIONS
     for m_data in MENUS:
-        stmt = insert(Menu).values(id=uuid.uuid4(), code=m_data["code"], name=m_data["name"])
+        stmt = insert(Menu).values(
+            id=uuid.uuid4(),
+            code=m_data["code"],
+            name=m_data["name"],
+            path=m_data.get("path"),
+            icon=m_data.get("icon"),
+            sort_order=m_data.get("sort_order", 0),
+            is_active=True,
+            is_deleted=False,
+        )
         stmt = stmt.on_conflict_do_update(
-            index_elements=['code'], set_=dict(name=stmt.excluded.name)
+            index_elements=['code'],
+            set_=dict(
+                name=stmt.excluded.name,
+                path=stmt.excluded.path,
+                icon=stmt.excluded.icon,
+                sort_order=stmt.excluded.sort_order,
+                is_active=stmt.excluded.is_active,
+                is_deleted=False,
+            )
         ).returning(Menu.id)
         menu_id = await session.scalar(stmt)
 
         for sub_data in m_data["submenus"]:
             sub_stmt = insert(SubMenu).values(
-                id=uuid.uuid4(), code=sub_data["code"], title=sub_data["title"], menu_id=menu_id
+                id=uuid.uuid4(),
+                code=sub_data["code"],
+                title=sub_data["title"],
+                menu_id=menu_id,
+                path=sub_data.get("path"),
+                icon=sub_data.get("icon"),
+                sort_order=sub_data.get("sort_order", 0),
+                is_active=True,
+                is_deleted=False,
             )
             sub_stmt = sub_stmt.on_conflict_do_update(
-                index_elements=['code'], set_=dict(title=sub_stmt.excluded.title, menu_id=sub_stmt.excluded.menu_id)
+                index_elements=['code'],
+                set_=dict(
+                    title=sub_stmt.excluded.title,
+                    menu_id=sub_stmt.excluded.menu_id,
+                    path=sub_stmt.excluded.path,
+                    icon=sub_stmt.excluded.icon,
+                    sort_order=sub_stmt.excluded.sort_order,
+                    is_active=sub_stmt.excluded.is_active,
+                    is_deleted=False,
+                )
             ).returning(SubMenu.id)
             submenu_id = await session.scalar(sub_stmt)
 
@@ -101,7 +140,7 @@ async def init_db(session: AsyncSession):
     await session.commit()
 
     # 3. ASSIGN PERMISSIONS TO ROLES
-    all_roles = (await session.scalars(select(Role))).all()
+    all_roles = (await session.scalars(select(Role).options(selectinload(Role.permissions)))).all()
     all_perms = (await session.scalars(select(Permission))).all()
     roles_map = {r.name: r for r in all_roles}
 
@@ -124,7 +163,7 @@ async def init_db(session: AsyncSession):
 
     # 4. UPSERT DEFAULT SUPERADMIN USER (Using correct format)
     admin_emp_id = "EMP000001"
-    stmt = select(User).where(User.emp_id == admin_emp_id)
+    stmt = select(User).where(User.emp_id == admin_emp_id).options(selectinload(User.roles))
     admin_user = (await session.execute(stmt)).scalar_one_or_none()
 
     if not admin_user:
@@ -135,7 +174,7 @@ async def init_db(session: AsyncSession):
             email="admin@company.com",
             full_name="System Administrator",
             phone_number="9876543210",
-            hashed_password=hash_password("Password@123!"),
+            hashed_password=await hash_password("Password@123!"),
             is_active=True,
             is_first_login=False,
             department_id=sys_dept_id 

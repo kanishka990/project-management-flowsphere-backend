@@ -10,7 +10,7 @@ from app.schemas.submenu_schema import SubMenuCreate, SubMenuResponse, SubMenuUp
 router = APIRouter(prefix="/submenus", tags=["SubMenus"])
 
 def get_submenu_service(db: AsyncSession = Depends(get_db)) -> SubMenuService:
-    return SubMenuService(db, SubMenuRepository(db))
+    return SubMenuService(SubMenuRepository(db))
 
 @router.post(
     "/", 
@@ -29,6 +29,18 @@ async def create_submenu(payload: SubMenuCreate, service: SubMenuService = Depen
 async def list_submenus(menu_id: UUID | None = Query(None), service: SubMenuService = Depends(get_submenu_service)):
     return await service.list_submenus(menu_id=menu_id)
 
+@router.patch(
+    "/{submenu_id}",
+    response_model=SubMenuResponse,
+    dependencies=[Depends(PermissionChecker(["submenus:update"]))]
+)
+async def update_submenu(
+    submenu_id: UUID,
+    payload: SubMenuUpdate,
+    service: SubMenuService = Depends(get_submenu_service),
+):
+    return await service.update_submenu(submenu_id, payload)
+
 @router.delete(
     "/{submenu_id}", 
     status_code=status.HTTP_204_NO_CONTENT,
@@ -37,3 +49,5 @@ async def list_submenus(menu_id: UUID | None = Query(None), service: SubMenuServ
 async def delete_submenu(submenu_id: UUID, service: SubMenuService = Depends(get_submenu_service)):
     await service.delete_submenu(submenu_id)
     return {}
+
+

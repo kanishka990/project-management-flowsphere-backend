@@ -6,6 +6,7 @@ from app.core.exceptions import (
     DuplicatePhoneNumberException,
     ValidationException,
     ResourceNotFoundException,
+    BadRequestException,
 )
 from app.core.security import hash_password, verify_password
 from app.repositories.user_repository import UserRepository
@@ -16,17 +17,26 @@ from app.schemas.user_schema import (
 )
 from app.models.user_model import User
 
+import secrets
+import hashlib
+from datetime import datetime, timedelta, UTC
+from app.repositories.email_verification_token_repository import EmailVerificationTokenRepository
+from app.models.email_verification_token_model import EmailVerificationToken
+from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
+from app.models.password_reset_token_model import PasswordResetToken
 
 class UserService:
     def __init__(
         self,
-        db: AsyncSession,
         user_repo: UserRepository,
         role_repo: RoleRepository,
+        email_verification_repo: EmailVerificationTokenRepository | None = None,
+        password_reset_repo: PasswordResetTokenRepository | None = None,
     ):
-        self.db = db
         self.user_repo = user_repo
         self.role_repo = role_repo
+        self.email_verification_repo = email_verification_repo
+        self.password_reset_repo = password_reset_repo
 
     async def create_user(
         self,
@@ -39,8 +49,11 @@ class UserService:
         if await self.user_repo.exists_phone_number(payload.phone_number):
             raise DuplicatePhoneNumberException()
 
-        hashed_password = hash_password(payload.password)
-        emp_id = await self.user_repo._generate_next_code(User, "EMP")
+        hashed_password = await hash_password(payload.password)
+        emp_id = await self.user_repo._generate_next_code(User, "emp_id", "EMP")
+
+        # If it's self-registration (require_password_change=False), they are not active until verified
+        is_active = require_password_change
 
         user = await self.user_repo.create(
             user_data=payload,
@@ -48,28 +61,123 @@ class UserService:
             emp_id=emp_id,
             created_by=created_by,
             is_first_login=require_password_change,
+            is_active=is_active,
         )
+
+        verification_token = None
+        if not require_password_change and self.email_verification_repo:
+            raw_token = secrets.token_urlsafe(32)
+            token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+            expires_at = datetime.now(UTC) + timedelta(hours=24)
+            
+            token_record = EmailVerificationToken(
+                user_id=user.id,
+                token_hash=token_hash,
+                expires_at=expires_at,
+            )
+            await self.email_verification_repo.create(token_record)
+            verification_token = raw_token
+
+        return user, verification_token
+
+    async def verify_email(self, raw_token: str):
+        if not self.email_verification_repo:
+            raise ValidationException("Email verification is not configured")
+
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        token_record = await self.email_verification_repo.get_by_token_hash(token_hash)
+        
+        if not token_record or token_record.expires_at < datetime.now(UTC):
+            raise ValidationException("Invalid or expired verification token")
+        
+        user = await self.user_repo.get_by_id(token_record.user_id)
+        if not user:
+            raise ResourceNotFoundException("User")
+            
+        await self.user_repo.update(user, is_active=True)
+        await self.email_verification_repo.update(token_record, used=True)
         return user
 
     async def authenticate_user(self, email: str, password: str):
         user = await self.user_repo.get_by_email(email)
         if not user or not user.is_active:
             return None
-        if not verify_password(password, user.hashed_password):
+        
+        # Check if account is locked
+        if user.locked_until and user.locked_until > datetime.now(UTC):
+            raise BadRequestException(
+                f"Account temporarily locked. Try again after {user.locked_until.strftime('%H:%M')} UTC"
+            )
+
+        if not await verify_password(password, user.hashed_password):
+            # Increment failure count
+            attempts = user.failed_login_attempts + 1
+            updates = {"failed_login_attempts": attempts}
+            if attempts >= 5:
+                updates["locked_until"] = datetime.now(UTC) + timedelta(minutes=15)
+            await self.user_repo.update(user, **updates)
             return None
+        
+        # Reset on success
+        if user.failed_login_attempts > 0:
+            await self.user_repo.update(user, failed_login_attempts=0, locked_until=None)
+
         return user
 
     async def change_password(self, user_id: UUID, current_password: str, new_password: str):
         user = await self.get_user_by_id(user_id)
 
-        if not verify_password(current_password, user.hashed_password):
+        if not await verify_password(current_password, user.hashed_password):
             raise ValidationException("Current password is incorrect")
 
         return await self.user_repo.update(
             user,
-            hashed_password=hash_password(new_password),
+            hashed_password=await hash_password(new_password),
             is_first_login=False,
         )
+
+    async def request_password_reset(self, email: str) -> str | None:
+        user = await self.user_repo.get_by_email(email)
+        if not user or not user.is_active:
+            return None
+        
+        if not self.password_reset_repo:
+            raise ValidationException("Password reset is not configured")
+
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
+        
+        token_record = PasswordResetToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        await self.password_reset_repo.create(token_record)
+        return raw_token
+
+    async def reset_password(self, raw_token: str, new_password: str):
+        if not self.password_reset_repo:
+            raise ValidationException("Password reset is not configured")
+
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        token_record = await self.password_reset_repo.get_by_token_hash(token_hash)
+        
+        if not token_record or token_record.expires_at < datetime.now(UTC):
+            raise ValidationException("Invalid or expired password reset token")
+            
+        user = await self.user_repo.get_by_id(token_record.user_id)
+        if not user:
+            raise ResourceNotFoundException("User")
+            
+        await self.user_repo.update(
+            user,
+            hashed_password=await hash_password(new_password),
+            failed_login_attempts=0,
+            locked_until=None
+        )
+        await self.password_reset_repo.update(token_record, used=True)
+        return user
 
     async def get_user_by_id(self, user_id: UUID):
         user = await self.user_repo.get_by_id(user_id)
@@ -112,9 +220,26 @@ class UserService:
             sort_order=sort_order,
         )
 
-    async def soft_delete_user(self, user_id: UUID):
+    async def list_project_managers(
+        self,
+        page: int,
+        page_size: int,
+        search: str | None = None,
+    ):
+        role = await self.role_repo.get_by_name("Project Manager")
+        if not role:
+            return [], 0, page_size
+            
+        return await self.user_repo.list(
+            page=page,
+            page_size=page_size,
+            search=search,
+            role_id=role.id,
+        )
+
+    async def soft_delete_user(self, user_id: UUID, deleted_by: UUID | None = None):
         user = await self.get_user_by_id(user_id)
-        await self.user_repo.soft_delete(user)
+        await self.user_repo.soft_delete(user, user_id=str(deleted_by) if deleted_by else None)
 
     async def replace_roles(self, user_id: UUID, role_ids: list[UUID]):
         user = await self.get_user_by_id(user_id)

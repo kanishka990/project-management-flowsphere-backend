@@ -3,16 +3,15 @@ from typing import Any
 from sqlalchemy import Select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
-
 class PaginationParams(BaseModel):
-    page: int = Query(1, ge=1)
-    page_size: int = Query(20, ge=1, le=100)
+    page: int = Field(1, ge=1)
+    page_size: int = Field(20, ge=1, le=100)
 
 
 def normalize_page(page: int) -> int:
@@ -64,8 +63,6 @@ def format_pagination_response(
         "pages": pages,
     }
 
-from typing import Any
-from pydantic import BaseModel, ConfigDict
 
 
 class PaginationResponse(BaseModel):

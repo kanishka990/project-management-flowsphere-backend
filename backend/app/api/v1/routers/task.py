@@ -13,7 +13,7 @@ from app.repositories.task_assignment_repository import TaskAssignmentRepository
 
 from app.services.task_service import TaskService
 
-from app.schemas.task import (
+from app.schemas.task_schema import (
     TaskCreate,
     TaskUpdate,
     TaskResponse,

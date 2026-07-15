@@ -22,7 +22,6 @@ router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
 def get_permission_service(db: AsyncSession = Depends(get_db)) -> PermissionService:
     return PermissionService(
-        db=db,
         permission_repo=PermissionRepository(db),
         role_repo=RoleRepository(db),
     )

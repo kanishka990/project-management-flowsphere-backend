@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSessionLocal as async_session
 from app.db.init_db import init_db
@@ -51,13 +52,13 @@ async def run_seed():
             {"emp_id": "EMP000008", "email": "ba@company.com", "name": "George BA", "roles": ["Business Analyst"], "dept": "ENG", "mgr_emp_id": "EMP000005"}
         ]
 
-        default_pwd = hash_password("Password@123!")
+        default_pwd = await hash_password("Password@123!")
         
         # Cache created users to easily assign reporting_manager_id
         user_id_cache = {}
 
         for u_data in test_users:
-            stmt = select(User).where(User.emp_id == u_data["emp_id"])
+            stmt = select(User).where(User.emp_id == u_data["emp_id"]).options(selectinload(User.roles))
             existing_user = (await session.execute(stmt)).scalar_one_or_none()
             
             if existing_user:

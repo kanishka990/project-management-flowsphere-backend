@@ -1,5 +1,4 @@
 from uuid import UUID
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceConflictException, ResourceNotFoundException, ValidationException
 from app.repositories.role_repository import RoleRepository
@@ -9,11 +8,9 @@ from app.schemas.role_schema import RoleCreate, RoleUpdate
 class RoleService:
     def __init__(
         self,
-        db: AsyncSession,
         role_repo: RoleRepository,
         permission_repo: PermissionRepository,
     ):
-        self.db = db
         self.role_repo = role_repo
         self.permission_repo = permission_repo
 

@@ -17,27 +17,35 @@ from app.models.user_model import User
 argon2_ph = PasswordHasher()
 
 
-def hash_password(password: str) -> str:
+import asyncio
+
+async def hash_password(password: str) -> str:
     """Hash password using Argon2."""
     if len(password) > 128:
         # Prevent DoS attacks from massive inputs at the validation layer
         raise ValueError("Password exceeds maximum allowed length of 128 characters.")
     
-    try:
-        return argon2_ph.hash(password)
-    except Exception as e:
-        raise ValueError(f"Password hashing failed: {str(e)}")
+    def _hash():
+        try:
+            return argon2_ph.hash(password)
+        except Exception as e:
+            raise ValueError(f"Password hashing failed: {str(e)}")
+            
+    return await asyncio.to_thread(_hash)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash using Argon2."""
-    try:
-        argon2_ph.verify(hashed_password, plain_password)
-        return True
-    except (VerifyMismatchError, InvalidHash):
-        return False
-    except Exception:
-        return False
+    def _verify():
+        try:
+            argon2_ph.verify(hashed_password, plain_password)
+            return True
+        except (VerifyMismatchError, InvalidHash):
+            return False
+        except Exception:
+            return False
+            
+    return await asyncio.to_thread(_verify)
 
 
 def create_access_token(user: User) -> str:

@@ -13,7 +13,7 @@ from app.repositories.project_repository import ProjectRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.task_assignment_repository import TaskAssignmentRepository
 
-from app.schemas.task import (
+from app.schemas.task_schema import (
     TaskCreate,
     TaskUpdate,
 )

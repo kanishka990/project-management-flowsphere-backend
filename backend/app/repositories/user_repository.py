@@ -15,24 +15,27 @@ from app.repositories.base_repository import BaseRepository
 
 class UserRepository(BaseRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session)
 
     async def get_by_id(self, user_id: UUID) -> User | None:
-        stmt = select(User).where(User.id == user_id).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+        stmt = select(User).where(User.id == user_id, User.is_deleted == False).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
     async def get_by_email(self, email: str) -> User | None:
         normalized = email.lower()
-        stmt = select(User).where(func.lower(User.email) == normalized).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+        stmt = select(User).where(func.lower(User.email) == normalized, User.is_deleted == False).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
     async def get_by_emp_id(self, emp_id: str) -> User | None:
-        stmt = select(User).where(User.emp_id == emp_id).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+        stmt = select(User).where(User.emp_id == emp_id, User.is_deleted == False).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
         return await self.session.scalar(stmt)
 
@@ -49,8 +52,9 @@ class UserRepository(BaseRepository):
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ): 
-        stmt = select(User).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+        stmt = select(User).where(User.is_deleted == False).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
         )
 
         if search:
@@ -85,8 +89,7 @@ class UserRepository(BaseRepository):
             "emp_id": User.emp_id,
             "full_name": User.full_name,
         }
-        order_column = sort_mapping.get(sort_by, User.created_at)
-        stmt = stmt.order_by(order_column.desc() if sort_order == "desc" else order_column.asc())
+        stmt = self._apply_sorting(stmt, User, sort_by, sort_order, sort_mapping)
         
         return await paginate(
             session=self.session, 
@@ -95,7 +98,7 @@ class UserRepository(BaseRepository):
             page_size=page_size
         )
 
-    async def create(self, user_data: UserCreate, hashed_password: str, emp_id: str, created_by=None, is_first_login: bool | None = None,) -> User:
+    async def create(self, user_data: UserCreate, hashed_password: str, emp_id: str, created_by=None, is_first_login: bool | None = None, is_active: bool = True) -> User:
         user = User(
             emp_id=emp_id,
             email=user_data.email.lower(),
@@ -104,6 +107,7 @@ class UserRepository(BaseRepository):
             hashed_password=hashed_password,
             created_by=created_by,
             updated_by=created_by,
+            is_active=is_active,
             is_first_login=True if is_first_login is None else is_first_login,
             department_id=user_data.department_id,
             reporting_manager_id=user_data.reporting_manager_id,
@@ -113,29 +117,36 @@ class UserRepository(BaseRepository):
         await self.session.refresh(user)
         return user
 
+    _UPDATABLE_FIELDS = frozenset({
+        "full_name", "phone_number", "department_id", "reporting_manager_id",
+        "is_active", "is_first_login", "hashed_password", "updated_by",
+        "is_deleted", "deleted_at", "deleted_by",
+        "failed_login_attempts", "locked_until",
+    })
+
     async def update(self, user: User, **kwargs) -> User:
         for key, value in kwargs.items():
-            if hasattr(user, key) and value is not None:
+            if key in self._UPDATABLE_FIELDS:
                 setattr(user, key, value)
         await self.session.flush()
         await self.session.refresh(user)
         return user
 
-    async def soft_delete(self, user: User) -> None:
+    async def soft_delete(self, user: User, user_id: str | None = None) -> None:
         user.is_active = False
-        await self.session.flush()
+        await super().soft_delete(user, user_id)
 
     async def exists_email(self, email: str) -> bool:
         normalized = email.lower()
-        stmt = select(func.count()).select_from(User).where(func.lower(User.email) == normalized)
+        stmt = select(func.count()).select_from(User).where(func.lower(User.email) == normalized, User.is_deleted == False)
         return await self.session.scalar(stmt) > 0
 
     async def exists_phone_number(self, phone_number: str) -> bool:
-        stmt = select(func.count()).select_from(User).where(User.phone_number == phone_number)
+        stmt = select(func.count()).select_from(User).where(User.phone_number == phone_number, User.is_deleted == False)
         return await self.session.scalar(stmt) > 0
     
     async def exists_emp_id(self, emp_id: str) -> bool:
-        stmt = select(func.count()).select_from(User).where(User.emp_id == emp_id)
+        stmt = select(func.count()).select_from(User).where(User.emp_id == emp_id, User.is_deleted == False)
         return await self.session.scalar(stmt) > 0
 
     async def assign_role(self, user: User, role: Role) -> None:

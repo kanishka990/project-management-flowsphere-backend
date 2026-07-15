@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from app.schemas.permission_schema import PermissionResponse
@@ -15,8 +15,10 @@ class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = None
 
-class RoleResponse(RoleBase):
+class RoleResponse(BaseModel):
     id: UUID
+    name: str
+    description: Optional[str] = None
     permissions: list[PermissionResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -35,4 +37,6 @@ class UserRoleAssign(BaseModel):
     role_id: UUID
 
 class RolePermissionReplace(BaseModel):
-    permission_ids: list[int] = Field(..., min_items=1)
+    permission_ids: List[UUID] = Field(..., min_items=1, description="List of valid Permission UUIDs")
+
+
