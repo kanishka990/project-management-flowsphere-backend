@@ -97,9 +97,9 @@ class ResourceConflictException(AppException):
 
 class RateLimitExceededException(AppException):
     """Raised when a user exceeds their API quota."""
-    def __init__(self):
+    def __init__(self, detail: str = "Too many requests, please try again later"):
         super().__init__(
-            detail="Too many requests, please try again later",
+            detail=detail,
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         )
 

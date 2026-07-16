@@ -32,6 +32,15 @@ class UserRepository(BaseRepository):
         )
         return await self.session.scalar(stmt)
 
+    async def get_by_email_for_update(self, email: str) -> User | None:
+        normalized = email.lower()
+        stmt = (
+            select(User)
+            .where(func.lower(User.email) == normalized, User.is_deleted == False)
+            .with_for_update()
+        )
+        return await self.session.scalar(stmt)
+
     async def get_by_emp_id(self, emp_id: str) -> User | None:
         stmt = select(User).where(User.emp_id == emp_id, User.is_deleted == False).options(
             selectinload(User.roles).selectinload(Role.permissions),

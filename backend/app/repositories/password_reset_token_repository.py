@@ -1,3 +1,6 @@
+from datetime import datetime
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.base_repository import BaseRepository
@@ -11,6 +14,23 @@ class PasswordResetTokenRepository(BaseRepository):
         stmt = select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
             PasswordResetToken.used == False
+        )
+        return await self.session.scalar(stmt)
+
+    async def get_latest_request_for_user_since(
+        self,
+        user_id: UUID,
+        since: datetime,
+    ) -> PasswordResetToken | None:
+        stmt = (
+            select(PasswordResetToken)
+            .where(
+                PasswordResetToken.user_id == user_id,
+                PasswordResetToken.created_at >= since,
+                PasswordResetToken.is_deleted == False,
+            )
+            .order_by(PasswordResetToken.created_at.desc())
+            .limit(1)
         )
         return await self.session.scalar(stmt)
 

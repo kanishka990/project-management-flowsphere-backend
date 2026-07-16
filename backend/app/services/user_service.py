@@ -7,6 +7,7 @@ from app.core.exceptions import (
     ValidationException,
     ResourceNotFoundException,
     BadRequestException,
+    RateLimitExceededException,
 )
 from app.core.security import hash_password, verify_password
 from app.repositories.user_repository import UserRepository
@@ -137,7 +138,7 @@ class UserService:
         )
 
     async def request_password_reset(self, email: str) -> str:
-        user = await self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_email_for_update(email)
         if not user:
             raise BadRequestException(
                 "Email address not found. Please check the email address or register first."
@@ -150,9 +151,20 @@ class UserService:
         if not self.password_reset_repo:
             raise ValidationException("Password reset is not configured")
 
+        now = datetime.now(UTC)
+        reset_request_window_started_at = now - timedelta(hours=1)
+        recent_reset_request = await self.password_reset_repo.get_latest_request_for_user_since(
+            user.id,
+            reset_request_window_started_at,
+        )
+        if recent_reset_request:
+            raise RateLimitExceededException(
+                "Password reset can only be requested once per user every hour."
+            )
+
         raw_token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-        expires_at = datetime.now(UTC) + timedelta(hours=1)
+        expires_at = now + timedelta(hours=1)
         
         token_record = PasswordResetToken(
             user_id=user.id,
