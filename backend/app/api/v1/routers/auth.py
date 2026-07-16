@@ -73,9 +73,7 @@ async def change_password(
 
 
 @router.post("/forget-password", status_code=status.HTTP_202_ACCEPTED)
-@limiter.limit("3/hour")
 async def forget_password(
-    request: Request,
     payload: PasswordResetRequest,
     background_tasks: BackgroundTasks,
     user_service: UserService = Depends(get_user_service),

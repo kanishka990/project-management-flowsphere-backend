@@ -48,6 +48,7 @@ class Settings(BaseSettings):
             database=self.DB_NAME,
         )
         return url.render_as_string(hide_password=False)
+        
     #SMTP Configuration
     SMTP_HOST: str | None = None
     SMTP_PORT: int | None = 587
