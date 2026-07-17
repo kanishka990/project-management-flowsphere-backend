@@ -21,6 +21,9 @@ class RoleRepository(BaseRepository):
         stmt = select(Role).where(Role.id == role_id, Role.is_deleted == False).options(
             selectinload(Role.permissions),
             selectinload(Role.users),
+            selectinload(Role.users).selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(Role.users).selectinload(User.reporting_manager),
+            selectinload(Role.users).selectinload(User.department),
         )
         return await self.session.scalar(stmt)
 
@@ -31,6 +34,9 @@ class RoleRepository(BaseRepository):
             .options(
                 selectinload(Role.permissions),
                 selectinload(Role.users),
+                selectinload(Role.users).selectinload(User.roles).selectinload(Role.permissions),
+                selectinload(Role.users).selectinload(User.reporting_manager),
+                selectinload(Role.users).selectinload(User.department),
             )
         )
         return await self.session.scalar(stmt)

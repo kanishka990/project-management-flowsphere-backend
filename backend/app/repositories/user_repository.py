@@ -21,6 +21,7 @@ class UserRepository(BaseRepository):
         stmt = select(User).where(User.id == user_id, User.is_deleted == False).options(
             selectinload(User.roles).selectinload(Role.permissions),
             selectinload(User.reporting_manager),
+            selectinload(User.department),
         )
         return await self.session.scalar(stmt)
 
@@ -29,6 +30,7 @@ class UserRepository(BaseRepository):
         stmt = select(User).where(func.lower(User.email) == normalized, User.is_deleted == False).options(
             selectinload(User.roles).selectinload(Role.permissions),
             selectinload(User.reporting_manager),
+            selectinload(User.department),
         )
         return await self.session.scalar(stmt)
 
@@ -45,6 +47,7 @@ class UserRepository(BaseRepository):
         stmt = select(User).where(User.emp_id == emp_id, User.is_deleted == False).options(
             selectinload(User.roles).selectinload(Role.permissions),
             selectinload(User.reporting_manager),
+            selectinload(User.department),
         )
         return await self.session.scalar(stmt)
 
@@ -64,6 +67,7 @@ class UserRepository(BaseRepository):
         stmt = select(User).where(User.is_deleted == False).options(
             selectinload(User.roles).selectinload(Role.permissions),
             selectinload(User.reporting_manager),
+            selectinload(User.department),
         )
 
         if search:
