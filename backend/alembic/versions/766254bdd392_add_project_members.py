@@ -11,6 +11,24 @@ from alembic import op
 import sqlalchemy as sa
 
 
+project_priority_enum = sa.Enum(
+    'CRITICAL',
+    'HIGH',
+    'MEDIUM',
+    'LOW',
+    name='project_priority',
+)
+project_status_enum = sa.Enum(
+    'DRAFT',
+    'PLANNING',
+    'IN_PROGRESS',
+    'UAT',
+    'COMPLETED',
+    'CLOSED',
+    name='project_status',
+)
+
+
 # revision identifiers, used by Alembic.
 revision: str = '766254bdd392'
 down_revision: Union[str, Sequence[str], None] = '0441dbade295'
@@ -42,14 +60,30 @@ def upgrade() -> None:
     op.create_index(op.f('ix_project_members_project_id'), 'project_members', ['project_id'], unique=False)
     op.create_index(op.f('ix_project_members_updated_by'), 'project_members', ['updated_by'], unique=False)
     op.create_index(op.f('ix_project_members_user_id'), 'project_members', ['user_id'], unique=False)
+    bind = op.get_bind()
+    project_priority_enum.create(bind, checkfirst=True)
+    project_status_enum.create(bind, checkfirst=True)
     op.add_column('projects', sa.Column('start_date', sa.Date(), nullable=True))
     op.add_column('projects', sa.Column('end_date', sa.Date(), nullable=True))
-    op.add_column('projects', sa.Column('priority', sa.Enum('CRITICAL', 'HIGH', 'MEDIUM', 'LOW', name='project_priority'), nullable=False))
-    op.add_column('projects', sa.Column('budget', sa.Float(), nullable=False))
+    op.add_column('projects', sa.Column('priority', project_priority_enum, server_default='MEDIUM', nullable=False))
+    op.add_column('projects', sa.Column('budget', sa.Float(), server_default='0', nullable=False))
     op.alter_column('projects', 'status',
                existing_type=sa.VARCHAR(length=30),
-               type_=sa.Enum('DRAFT', 'PLANNING', 'IN_PROGRESS', 'UAT', 'COMPLETED', 'CLOSED', name='project_status'),
-               existing_nullable=False)
+               type_=project_status_enum,
+               existing_nullable=False,
+               postgresql_using=(
+                   "CASE status "
+                   "WHEN 'Draft' THEN 'DRAFT' "
+                   "WHEN 'Planning' THEN 'PLANNING' "
+                   "WHEN 'In Progress' THEN 'IN_PROGRESS' "
+                   "WHEN 'UAT' THEN 'UAT' "
+                   "WHEN 'Completed' THEN 'COMPLETED' "
+                   "WHEN 'Closed' THEN 'CLOSED' "
+                   "ELSE status "
+                   "END::project_status"
+               ))
+    op.alter_column('projects', 'priority', server_default=None)
+    op.alter_column('projects', 'budget', server_default=None)
     op.alter_column('users', 'department_id',
                existing_type=sa.UUID(),
                nullable=False)
@@ -63,11 +97,25 @@ def downgrade() -> None:
                existing_type=sa.UUID(),
                nullable=True)
     op.alter_column('projects', 'status',
-               existing_type=sa.Enum('DRAFT', 'PLANNING', 'IN_PROGRESS', 'UAT', 'COMPLETED', 'CLOSED', name='project_status'),
+               existing_type=project_status_enum,
                type_=sa.VARCHAR(length=30),
-               existing_nullable=False)
+               existing_nullable=False,
+               postgresql_using=(
+                   "CASE status::text "
+                   "WHEN 'DRAFT' THEN 'Draft' "
+                   "WHEN 'PLANNING' THEN 'Planning' "
+                   "WHEN 'IN_PROGRESS' THEN 'In Progress' "
+                   "WHEN 'UAT' THEN 'UAT' "
+                   "WHEN 'COMPLETED' THEN 'Completed' "
+                   "WHEN 'CLOSED' THEN 'Closed' "
+                   "ELSE status::text "
+                   "END"
+               ))
     op.drop_column('projects', 'budget')
     op.drop_column('projects', 'priority')
+    bind = op.get_bind()
+    project_status_enum.drop(bind, checkfirst=True)
+    project_priority_enum.drop(bind, checkfirst=True)
     op.drop_column('projects', 'end_date')
     op.drop_column('projects', 'start_date')
     op.drop_index(op.f('ix_project_members_user_id'), table_name='project_members')
