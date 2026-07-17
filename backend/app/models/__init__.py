@@ -1,4 +1,5 @@
 from app.db.base import Base
+
 from .associations_model import user_roles, role_permissions
 from .user_model import User
 from .role_model import Role
@@ -7,6 +8,7 @@ from .submenu_model import SubMenu
 from .menu_model import Menu
 from .department_model import Department
 from .project_model import Project
+from .project_member_model import ProjectMember
 from .task_model import Task
 from .task_assignment_model import TaskAssignment
 from .timesheet_model import Timesheet
@@ -24,9 +26,10 @@ __all__ = [
     "Menu",
     "Department",
     "Project",
+    "ProjectMember",
     "Task",
     "TaskAssignment",
     "Timesheet",
     "EmailVerificationToken",
-    "PasswordResetToken"
+    "PasswordResetToken",
 ]

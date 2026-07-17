@@ -1,14 +1,14 @@
+import re
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from uuid import UUID
-from app.schemas import role_schema
 
-from app.schemas.role_schema import RoleResponse
-from app.schemas.permission_schema import PermissionResponse
-
-import re
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+from pydantic import computed_field
+
+from app.schemas import role_schema
+from app.schemas.permission_schema import PermissionResponse
+from app.schemas.department_schema import DepartmentResponse
 
 class ManagerBasicResponse(BaseModel):
     id: UUID
@@ -22,7 +22,7 @@ class UserBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=15)
     department_id: UUID
-    reporting_manager: Optional[ManagerBasicResponse] = None
+    reporting_manager_id: Optional[UUID] = None
 
     @field_validator("phone_number")
     @classmethod
@@ -66,9 +66,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     department_id: Optional[UUID] = None
-    reporting_manager: Optional[ManagerBasicResponse] = None
-
-from pydantic import computed_field
+    reporting_manager_id: Optional[UUID] = None
 
 # 4. The Response Schema (Used when returning data to the frontend)
 class UserResponse(BaseModel):           
@@ -77,6 +75,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     department_id: UUID
+    department: Optional[DepartmentResponse] = None
     reporting_manager: Optional[ManagerBasicResponse] = None
     
     emp_id: str         

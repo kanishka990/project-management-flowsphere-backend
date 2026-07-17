@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.project_member_model import ProjectMember
 from app.models.project_model import Project
+from app.repositories.base_repository import BaseRepository
 from app.schemas.project_schema import ProjectCreate
 from app.utils.pagination import paginate
-from app.repositories.base_repository import BaseRepository
 
 
 class ProjectRepository(BaseRepository):
@@ -23,6 +24,9 @@ class ProjectRepository(BaseRepository):
             .options(
                 selectinload(Project.tasks),
                 selectinload(Project.timesheets),
+                selectinload(Project.project_members).selectinload(
+                    ProjectMember.user
+                ),
             )
         )
         return await self.session.scalar(stmt)
@@ -45,6 +49,7 @@ class ProjectRepository(BaseRepository):
         page_size: int = 20,
         search: str | None = None,
         status: str | None = None,
+        priority: str | None = None,
         manager_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
@@ -60,6 +65,9 @@ class ProjectRepository(BaseRepository):
         if status:
             stmt = stmt.where(Project.status == status)
 
+        if priority:
+            stmt = stmt.where(Project.priority == priority)
+
         if manager_id:
             stmt = stmt.where(Project.manager_id == manager_id)
 
@@ -68,6 +76,11 @@ class ProjectRepository(BaseRepository):
             "updated_at": Project.updated_at,
             "name": Project.name,
             "code": Project.code,
+            "start_date": Project.start_date,
+            "end_date": Project.end_date,
+            "budget": Project.budget,
+            "priority": Project.priority,
+            "status": Project.status,
         }
 
         order_column = sort_mapping.get(
@@ -98,7 +111,11 @@ class ProjectRepository(BaseRepository):
             name=payload.name,
             code=payload.code,
             description=payload.description,
+            start_date=payload.start_date,
+            end_date=payload.end_date,
             status=payload.status,
+            priority=payload.priority,
+            budget=payload.budget,
             manager_id=payload.manager_id,
             created_by=created_by,
             updated_by=created_by,
@@ -163,3 +180,71 @@ class ProjectRepository(BaseRepository):
         )
 
         return (await self.session.scalar(stmt)) > 0
+
+    async def assign_members(
+        self,
+        project_id: UUID,
+        user_ids: list[UUID],
+        created_by: UUID | None = None,
+    ) -> list[ProjectMember]:
+
+        members: list[ProjectMember] = []
+
+        for user_id in user_ids:
+            stmt = select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id,
+            )
+
+            existing = await self.session.scalar(stmt)
+
+            if existing:
+                members.append(existing)
+                continue
+
+            member = ProjectMember(
+                project_id=project_id,
+                user_id=user_id,
+                created_by=created_by,
+                updated_by=created_by,
+            )
+
+            self.session.add(member)
+            members.append(member)
+
+        await self.session.flush()
+
+        for member in members:
+            await self.session.refresh(member)
+
+        return members
+
+    async def get_project_members(
+        self,
+        project_id: UUID,
+    ) -> list[ProjectMember]:
+
+        stmt = (
+            select(ProjectMember)
+            .where(ProjectMember.project_id == project_id)
+            .options(
+                selectinload(ProjectMember.user),
+            )
+        )
+
+        result = await self.session.scalars(stmt)
+        return result.all()
+
+    async def remove_member(
+        self,
+        project_id: UUID,
+        user_id: UUID,
+    ) -> None:
+
+        stmt = delete(ProjectMember).where(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == user_id,
+        )
+
+        await self.session.execute(stmt)
+        await self.session.flush()
