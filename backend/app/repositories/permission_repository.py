@@ -88,7 +88,11 @@ class PermissionRepository(BaseRepository):
             .join(Role, Role.id == user_roles.c.role_id)
             .join(role_permissions, Role.id == role_permissions.c.role_id)
             .where(role_permissions.c.permission_id == permission_id)
-            .options(selectinload(User.roles))
+            .options(
+                selectinload(User.roles).selectinload(Role.permissions),
+                selectinload(User.reporting_manager),
+                selectinload(User.department),
+            )
         )
         result = await self.session.scalars(stmt)
         return list(result.unique().all())
