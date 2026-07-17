@@ -15,6 +15,8 @@ from app.schemas.project_schema import (
     ProjectUpdate,
     ProjectResponse,
     ProjectListResponse,
+    AssignProjectMembers,
+    ProjectMemberResponse,
 )
 
 from app.utils.pagination import (
@@ -62,6 +64,7 @@ async def create_project(
 async def list_projects(
     search: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
+    priority: str | None = Query(None),
     manager_id: UUID | None = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
@@ -73,6 +76,7 @@ async def list_projects(
         page_size=pagination.page_size,
         search=search,
         status=status_filter,
+        priority=priority,
         manager_id=manager_id,
         sort_by=sort_by,
         sort_order=sort_order,
@@ -126,4 +130,54 @@ async def delete_project(
     service: ProjectService = Depends(get_project_service),
 ):
     await service.delete_project(project_id)
+    return {}
+
+
+# ==========================================================
+# Project Members APIs
+# ==========================================================
+
+@router.post(
+    "/{project_id}/members",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(PermissionChecker(["projects:update"]))],
+)
+async def assign_project_members(
+    project_id: UUID,
+    payload: AssignProjectMembers,
+    current_user=Depends(get_current_active_user),
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.assign_members(
+        project_id=project_id,
+        user_ids=payload.user_ids,
+        created_by=current_user.id,
+    )
+
+
+@router.get(
+    "/{project_id}/members",
+    dependencies=[Depends(PermissionChecker(["projects:read"]))],
+)
+async def get_project_members(
+    project_id: UUID,
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.get_project_members(project_id)
+
+
+@router.delete(
+    "/{project_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(PermissionChecker(["projects:update"]))],
+)
+async def remove_project_member(
+    project_id: UUID,
+    user_id: UUID,
+    service: ProjectService = Depends(get_project_service),
+):
+    await service.remove_member(
+        project_id,
+        user_id,
+    )
     return {}

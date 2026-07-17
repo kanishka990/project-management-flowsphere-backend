@@ -36,6 +36,11 @@ class ProjectService:
         if await self.project_repo.exists_code(payload.code):
             raise ValidationException("Project code already exists.")
 
+        if payload.start_date > payload.end_date:
+            raise ValidationException(
+                "Start date cannot be after end date."
+            )
+
         return await self.project_repo.create(
             payload,
             created_by,
@@ -58,6 +63,7 @@ class ProjectService:
         page_size: int = 20,
         search: str | None = None,
         status: str | None = None,
+        priority: str | None = None,
         manager_id: UUID | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
@@ -67,6 +73,7 @@ class ProjectService:
             page_size=page_size,
             search=search,
             status=status,
+            priority=priority,
             manager_id=manager_id,
             sort_by=sort_by,
             sort_order=sort_order,
@@ -87,14 +94,37 @@ class ProjectService:
             and update_data["name"] != project.name
         ):
             if await self.project_repo.exists_name(update_data["name"]):
-                raise ValidationException("Project name already exists.")
+                raise ValidationException(
+                    "Project name already exists."
+                )
 
         if (
             "code" in update_data
             and update_data["code"] != project.code
         ):
             if await self.project_repo.exists_code(update_data["code"]):
-                raise ValidationException("Project code already exists.")
+                raise ValidationException(
+                    "Project code already exists."
+                )
+
+        start_date = update_data.get(
+            "start_date",
+            project.start_date,
+        )
+
+        end_date = update_data.get(
+            "end_date",
+            project.end_date,
+        )
+
+        if (
+            start_date is not None
+            and end_date is not None
+            and start_date > end_date
+        ):
+            raise ValidationException(
+                "Start date cannot be after end date."
+            )
 
         update_data["updated_by"] = updated_by
 
@@ -110,3 +140,43 @@ class ProjectService:
         project = await self.get_project_by_id(project_id)
 
         await self.project_repo.delete(project)
+
+    # ==========================================================
+    # Project Members
+    # ==========================================================
+
+    async def assign_members(
+        self,
+        project_id: UUID,
+        user_ids: list[UUID],
+        created_by: UUID,
+    ):
+        await self.get_project_by_id(project_id)
+
+        return await self.project_repo.assign_members(
+            project_id=project_id,
+            user_ids=user_ids,
+            created_by=created_by,
+        )
+
+    async def get_project_members(
+        self,
+        project_id: UUID,
+    ):
+        await self.get_project_by_id(project_id)
+
+        return await self.project_repo.get_project_members(
+            project_id
+        )
+
+    async def remove_member(
+        self,
+        project_id: UUID,
+        user_id: UUID,
+    ):
+        await self.get_project_by_id(project_id)
+
+        await self.project_repo.remove_member(
+            project_id,
+            user_id,
+        )
