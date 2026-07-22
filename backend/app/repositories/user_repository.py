@@ -9,7 +9,7 @@ from app.models.user_model import User
 from app.models.role_model import Role
 from app.models.permission_model import Permission
 from app.models.associations_model import user_roles, role_permissions
-from app.schemas.user_schema import UserCreate
+from app.schemas.user_schema import UserCreateBase
 from app.utils.pagination import paginate
 from app.repositories.base_repository import BaseRepository  
 
@@ -19,6 +19,14 @@ class UserRepository(BaseRepository):
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         stmt = select(User).where(User.id == user_id, User.is_deleted == False).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.reporting_manager),
+            selectinload(User.department),
+        )
+        return await self.session.scalar(stmt)
+
+    async def get_by_id_including_deleted(self, user_id: UUID) -> User | None:
+        stmt = select(User).where(User.id == user_id).options(
             selectinload(User.roles).selectinload(Role.permissions),
             selectinload(User.reporting_manager),
             selectinload(User.department),
@@ -111,7 +119,16 @@ class UserRepository(BaseRepository):
             page_size=page_size
         )
 
-    async def create(self, user_data: UserCreate, hashed_password: str, emp_id: str, created_by=None, is_first_login: bool | None = None, is_active: bool = True) -> User:
+    async def create(
+        self,
+        user_data: UserCreateBase,
+        hashed_password: str,
+        emp_id: str,
+        created_by=None,
+        is_first_login: bool | None = None,
+        is_active: bool = True,
+        roles: list[Role] | None = None,
+    ) -> User:
         user = User(
             emp_id=emp_id,
             email=user_data.email.lower(),
@@ -124,6 +141,7 @@ class UserRepository(BaseRepository):
             is_first_login=True if is_first_login is None else is_first_login,
             department_id=user_data.department_id,
             reporting_manager_id=user_data.reporting_manager_id,
+            roles=roles or [],
         )
         self.session.add(user)
         await self.session.flush()
@@ -148,6 +166,15 @@ class UserRepository(BaseRepository):
     async def soft_delete(self, user: User, user_id: str | None = None) -> None:
         user.is_active = False
         await super().soft_delete(user, user_id)
+
+    async def reactivate(self, user: User, updated_by: UUID | None = None) -> User:
+        user.is_deleted = False
+        user.deleted_at = None
+        user.deleted_by = None
+        user.is_active = True
+        user.updated_by = updated_by
+        await self.session.flush()
+        return user
 
     async def exists_email(self, email: str) -> bool:
         normalized = email.lower()

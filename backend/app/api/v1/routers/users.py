@@ -45,11 +45,12 @@ async def create_user(
     """
     Admin-created users receive a temporary password and must change it on first login.
     """
-    return await user_service.create_user(
+    user, _verification_token = await user_service.create_user(
         payload,
         created_by=current_user.id,
         require_password_change=True,
     )
+    return user
 
 
 @router.get(
@@ -168,6 +169,22 @@ async def delete_user(
 ):
     await user_service.soft_delete_user(user_id, deleted_by=current_user.id)
     return {}
+
+
+@router.patch(
+    "/{user_id}/reactivate",
+    response_model=UserResponse,
+    dependencies=[Depends(PermissionChecker(["users:update"]))],
+)
+async def reactivate_user(
+    user_id: UUID,
+    current_user=Depends(get_current_active_user),
+    user_service: UserService = Depends(get_user_service),
+):
+    return await user_service.reactivate_user(
+        user_id,
+        reactivated_by=current_user.id,
+    )
 
 
 @router.put(

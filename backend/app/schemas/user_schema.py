@@ -32,8 +32,8 @@ class UserBase(BaseModel):
             raise ValueError("Invalid phone number format")
         return cleaned
 
-# 2. The Create Schema (Used when registering a new user)
-class UserCreate(UserBase):
+# 2. Shared schema for user creation payloads
+class UserCreateBase(UserBase):
     password: str = Field(
         ...,
         min_length=8,
@@ -54,7 +54,21 @@ class UserCreate(UserBase):
             raise ValueError("Password must contain at least one special character")
         return v
 
-class UserSelfRegister(UserCreate):
+# 3. The Create Schema (Used when an admin creates a new user)
+class UserCreate(UserCreateBase):
+    role_ids: list[UUID] = Field(
+        default_factory=list,
+        description="Role IDs to assign to the user during creation",
+    )
+
+    @field_validator("role_ids")
+    @classmethod
+    def validate_unique_role_ids(cls, v: list[UUID]) -> list[UUID]:
+        if len(set(v)) != len(v):
+            raise ValueError("role_ids must not contain duplicate values")
+        return v
+
+class UserSelfRegister(UserCreateBase):
     pass
 
 class EmailVerificationResponse(BaseModel):

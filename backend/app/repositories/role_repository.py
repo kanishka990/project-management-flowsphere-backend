@@ -27,6 +27,17 @@ class RoleRepository(BaseRepository):
         )
         return await self.session.scalar(stmt)
 
+    async def get_by_ids(self, role_ids: list[UUID]) -> list[Role]:
+        if not role_ids:
+            return []
+
+        stmt = select(Role).where(
+            Role.id.in_(role_ids),
+            Role.is_deleted == False,
+        ).options(selectinload(Role.permissions))
+        result = await self.session.scalars(stmt)
+        return result.unique().all()
+
     async def get_by_name(self, name: str) -> Role | None:
         stmt = (
             select(Role)
