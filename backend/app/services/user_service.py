@@ -14,9 +14,11 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.role_repository import RoleRepository
 from app.schemas.user_schema import (
     UserCreate,
+    UserSelfRegister,
     UserUpdate,
 )
 from app.models.user_model import User
+from app.models.role_model import Role
 
 import secrets
 import hashlib
@@ -41,7 +43,7 @@ class UserService:
 
     async def create_user(
         self,
-        payload: UserCreate,
+        payload: UserCreate | UserSelfRegister,
         created_by: UUID | None = None,
         require_password_change: bool = False,
     ):
@@ -56,6 +58,9 @@ class UserService:
         # If it's self-registration (require_password_change=False), they are not active until verified
         is_active = require_password_change
 
+        role_ids = payload.role_ids if isinstance(payload, UserCreate) else []
+        roles = await self._get_roles_by_ids(role_ids)
+
         user = await self.user_repo.create(
             user_data=payload,
             hashed_password=hashed_password,
@@ -63,7 +68,12 @@ class UserService:
             created_by=created_by,
             is_first_login=require_password_change,
             is_active=is_active,
+            roles=roles,
         )
+
+        loaded_user = await self.user_repo.get_by_id(user.id)
+        if not loaded_user:
+            raise ResourceNotFoundException("User")
 
         verification_token = None
         if not require_password_change and self.email_verification_repo:
@@ -79,7 +89,23 @@ class UserService:
             await self.email_verification_repo.create(token_record)
             verification_token = raw_token
 
-        return user, verification_token
+        return loaded_user, verification_token
+
+    async def _get_roles_by_ids(self, role_ids: list[UUID]) -> list[Role]:
+        if not role_ids:
+            return []
+
+        roles = await self.role_repo.get_by_ids(role_ids)
+        roles_by_id = {role.id: role for role in roles}
+        missing_role_ids = [
+            str(role_id)
+            for role_id in role_ids
+            if role_id not in roles_by_id
+        ]
+        if missing_role_ids:
+            raise ResourceNotFoundException(f"Role(s): {', '.join(missing_role_ids)}")
+
+        return [roles_by_id[role_id] for role_id in role_ids]
 
     async def verify_email(self, raw_token: str):
         if not self.email_verification_repo:
@@ -258,6 +284,19 @@ class UserService:
     async def soft_delete_user(self, user_id: UUID, deleted_by: UUID | None = None):
         user = await self.get_user_by_id(user_id)
         await self.user_repo.soft_delete(user, user_id=str(deleted_by) if deleted_by else None)
+
+    async def reactivate_user(self, user_id: UUID, reactivated_by: UUID | None = None):
+        user = await self.user_repo.get_by_id_including_deleted(user_id)
+        if not user:
+            raise ResourceNotFoundException("User")
+        if not user.is_deleted:
+            raise BadRequestException("User is not deleted")
+
+        await self.user_repo.reactivate(user, updated_by=reactivated_by)
+        reactivated_user = await self.user_repo.get_by_id(user.id)
+        if not reactivated_user:
+            raise ResourceNotFoundException("User")
+        return reactivated_user
 
     async def replace_roles(self, user_id: UUID, role_ids: list[UUID]):
         user = await self.get_user_by_id(user_id)
