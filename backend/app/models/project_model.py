@@ -12,6 +12,7 @@ from sqlalchemy import (
     Float,
     String,
     Text,
+    ForeignKey,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
     from app.models.project_member_model import ProjectMember
     from app.models.task_model import Task
     from app.models.timesheet_model import Timesheet
+    from app.models.user_model import User
 
 
 class ProjectStatus(str, Enum):
@@ -98,8 +100,15 @@ class Project(Base, FullAuditMixin):
 
     manager_id: Mapped[UUIDType] = mapped_column(
         UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
+    )
+
+    manager: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[manager_id],
+        lazy="selectin",
     )
 
     tasks: Mapped[List["Task"]] = relationship(
@@ -121,6 +130,10 @@ class Project(Base, FullAuditMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    @property
+    def manager_name(self) -> str | None:
+        return self.manager.full_name if self.manager else None
 
     def __repr__(self) -> str:
         return f"<Project {self.name}>"
