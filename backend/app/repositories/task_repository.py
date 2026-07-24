@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.task_model import Task
+from app.models.task_assignment_model import TaskAssignment
 from app.schemas.task_schema import TaskCreate
 from app.utils.pagination import paginate
 from app.repositories.base_repository import BaseRepository
@@ -22,7 +23,12 @@ class TaskRepository(BaseRepository):
             .where(Task.id == task_id)
             .options(
                 selectinload(Task.project),
-                selectinload(Task.assignments),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.employee
+                ),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.assigned_user
+                ),
                 selectinload(Task.timesheets),
             )
         )
@@ -53,8 +59,17 @@ class TaskRepository(BaseRepository):
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ):
-        stmt = select(Task).options(
-            selectinload(Task.project)
+        stmt = (
+            select(Task)
+            .options(
+                selectinload(Task.project),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.employee
+                ),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.assigned_user
+                ),
+            )
         )
 
         if project_id:
@@ -169,6 +184,15 @@ class TaskRepository(BaseRepository):
         stmt = (
             select(Task)
             .where(Task.project_id == project_id)
+            .options(
+                selectinload(Task.project),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.employee
+                ),
+                selectinload(Task.assignments).selectinload(
+                    TaskAssignment.assigned_user
+                ),
+            )
             .order_by(Task.created_at.desc())
         )
 
