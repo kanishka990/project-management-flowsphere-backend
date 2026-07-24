@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from uuid import UUID
-from typing import Optional
 from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+
+from app.utils.pagination import PaginationResponse
 
 
 class TaskBase(BaseModel):
@@ -28,19 +30,25 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
 
 
+class TaskAssignmentInfo(BaseModel):
+    employee_id: UUID
+    employee_name: str
+    assigned_by: UUID
+    assigned_by_name: str
+    status: str
+    remarks: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TaskResponse(TaskBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
 
+    assignment: Optional[TaskAssignmentInfo] = None
+
     model_config = ConfigDict(from_attributes=True)
-
-from uuid import UUID
-from typing import Optional, List
-
-from pydantic import BaseModel
-
-from app.utils.pagination import PaginationResponse
 
 
 class TaskAssignmentCreate(BaseModel):

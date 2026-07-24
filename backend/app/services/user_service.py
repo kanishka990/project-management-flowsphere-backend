@@ -60,6 +60,9 @@ class UserService:
 
         role_ids = payload.role_ids if isinstance(payload, UserCreate) else []
         roles = await self._get_roles_by_ids(role_ids)
+        await self._validate_reporting_manager(
+            reporting_manager_id=payload.reporting_manager_id,
+        )
 
         user = await self.user_repo.create(
             user_data=payload,
@@ -106,6 +109,21 @@ class UserService:
             raise ResourceNotFoundException(f"Role(s): {', '.join(missing_role_ids)}")
 
         return [roles_by_id[role_id] for role_id in role_ids]
+
+    async def _validate_reporting_manager(
+        self,
+        reporting_manager_id: UUID | None,
+        user_id: UUID | None = None,
+    ) -> None:
+        if reporting_manager_id is None:
+            return
+
+        if user_id is not None and reporting_manager_id == user_id:
+            raise ValidationException("User cannot be their own reporting manager")
+
+        manager = await self.user_repo.get_by_id(reporting_manager_id)
+        if not manager:
+            raise ResourceNotFoundException("Reporting manager")
 
     async def verify_email(self, raw_token: str):
         if not self.email_verification_repo:
@@ -230,9 +248,22 @@ class UserService:
         return user
 
     async def update_user(self, user_id: UUID, payload: UserUpdate):
-        user = await self.get_user_by_id(user_id)
+        user = await self.user_repo.get_by_id_for_update(user_id)
+        if not user:
+            raise ResourceNotFoundException("User")
+
         update_data = payload.model_dump(exclude_unset=True)
-        return await self.user_repo.update(user, **update_data)
+        if "reporting_manager_id" in update_data:
+            await self._validate_reporting_manager(
+                reporting_manager_id=update_data["reporting_manager_id"],
+                user_id=user_id,
+            )
+
+        await self.user_repo.update(user, **update_data)
+        updated_user = await self.user_repo.get_by_id(user.id)
+        if not updated_user:
+            raise ResourceNotFoundException("User")
+        return updated_user
 
     async def list_users(
         self,

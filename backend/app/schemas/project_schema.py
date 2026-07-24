@@ -64,6 +64,8 @@ class ProjectUpdate(BaseModel):
 
 class ProjectResponse(ProjectBase):
     id: UUID
+    manager_name: Optional[str] = None
+    
     created_at: datetime
     updated_at: datetime
 
