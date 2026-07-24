@@ -25,6 +25,14 @@ class UserRepository(BaseRepository):
         )
         return await self.session.scalar(stmt)
 
+    async def get_by_id_for_update(self, user_id: UUID) -> User | None:
+        stmt = (
+            select(User)
+            .where(User.id == user_id, User.is_deleted == False)
+            .with_for_update()
+        )
+        return await self.session.scalar(stmt)
+
     async def get_by_id_including_deleted(self, user_id: UUID) -> User | None:
         stmt = select(User).where(User.id == user_id).options(
             selectinload(User.roles).selectinload(Role.permissions),
