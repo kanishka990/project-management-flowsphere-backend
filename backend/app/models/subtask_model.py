@@ -20,7 +20,7 @@ from app.db.mixins import FullAuditMixin
 if TYPE_CHECKING:
     from app.models.task_model import Task
     from app.models.user_model import User
-    from app.models.subtask_model import SubTask
+    from app.models.timesheet_model import Timesheet
 
 
 class SubTask(Base, FullAuditMixin):
@@ -101,21 +101,40 @@ class SubTask(Base, FullAuditMixin):
         nullable=True,
     )
 
+    # =====================================================
     # Relationships
+    # =====================================================
+
     task: Mapped["Task"] = relationship(
         "Task",
         back_populates="subtasks",
+        lazy="selectin",
     )
 
     manager: Mapped["User"] = relationship(
         "User",
         foreign_keys=[manager_id],
+        lazy="selectin",
     )
 
     employee: Mapped["User"] = relationship(
         "User",
         foreign_keys=[employee_id],
+        lazy="selectin",
+    )
+
+    timesheets: Mapped[list["Timesheet"]] = relationship(
+        "Timesheet",
+        back_populates="subtask",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     def __repr__(self):
-        return f"<SubTask {self.title}>"
+        return (
+            f"<SubTask("
+            f"id={self.id}, "
+            f"title='{self.title}', "
+            f"employee={self.employee_id}, "
+            f"status='{self.status}')>"
+        )

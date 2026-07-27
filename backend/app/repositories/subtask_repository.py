@@ -194,3 +194,52 @@ class SubTaskRepository(BaseRepository):
 
         result = await self.session.scalars(stmt)
         return result.all()
+        # =========================================================
+    # GET EMPLOYEE SUBTASK
+    # =========================================================
+
+    async def get_employee_subtask(
+        self,
+        subtask_id: UUID,
+        employee_id: UUID,
+    ) -> SubTask | None:
+
+        stmt = (
+            select(SubTask)
+            .where(
+                SubTask.id == subtask_id,
+                SubTask.employee_id == employee_id,
+            )
+            .options(
+                selectinload(SubTask.manager),
+                selectinload(SubTask.employee),
+                selectinload(SubTask.task),
+            )
+        )
+
+        return await self.session.scalar(stmt)
+
+    # =========================================================
+    # GET TASK SUBTASK
+    # =========================================================
+
+    async def get_task_subtask(
+        self,
+        task_id: UUID,
+        subtask_id: UUID,
+    ) -> SubTask | None:
+
+        stmt = (
+            select(SubTask)
+            .where(
+                SubTask.id == subtask_id,
+                SubTask.task_id == task_id,
+            )
+            .options(
+                selectinload(SubTask.manager),
+                selectinload(SubTask.employee),
+                selectinload(SubTask.task),
+            )
+        )
+
+        return await self.session.scalar(stmt)

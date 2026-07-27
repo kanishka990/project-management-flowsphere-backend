@@ -21,6 +21,9 @@ from app.db.session import get_db
 from app.repositories.project_repository import (
     ProjectRepository,
 )
+from app.repositories.subtask_repository import (
+    SubTaskRepository,
+)
 from app.repositories.task_assignment_repository import (
     TaskAssignmentRepository,
 )
@@ -69,6 +72,7 @@ def get_timesheet_service(
         assignment_repo=TaskAssignmentRepository(db),
         project_repo=ProjectRepository(db),
         task_repo=TaskRepository(db),
+        subtask_repo=SubTaskRepository(db),
     )
 
 
@@ -123,6 +127,7 @@ async def list_timesheets(
     employee_id: UUID | None = Query(None),
     project_id: UUID | None = Query(None),
     task_id: UUID | None = Query(None),
+    subtask_id: UUID | None = Query(None),
     status_filter: str | None = Query(
         None,
         alias="status",
@@ -145,6 +150,7 @@ async def list_timesheets(
             employee_id=employee_id,
             project_id=project_id,
             task_id=task_id,
+            subtask_id=subtask_id,
             status=status_filter,
             work_date=work_date,
             sort_by=sort_by,
@@ -176,6 +182,9 @@ async def list_timesheets(
     ],
 )
 async def pending_timesheets(
+    current_user=Depends(
+        get_current_active_user
+    ),
     pagination: PaginationParams = Depends(
         PaginationParams
     ),
@@ -185,9 +194,10 @@ async def pending_timesheets(
 ):
 
     items, total, actual_page_size = (
-        await service.get_pending_timesheets(
-            pagination.page,
-            pagination.page_size,
+        await service.pending_timesheets(
+            manager_id=current_user.id,
+            page=pagination.page,
+            page_size=pagination.page_size,
         )
     )
 
@@ -319,7 +329,7 @@ async def approve_timesheet(
 
     return await service.approve_timesheet(
         timesheet_id=timesheet_id,
-        approver_id=current_user.id,
+        manager_id=current_user.id,
         payload=payload,
     )
 
@@ -352,8 +362,9 @@ async def reject_timesheet(
 
     return await service.reject_timesheet(
         timesheet_id=timesheet_id,
-        approver_id=current_user.id,
-        reason=payload.rejection_reason,
+        manager_id=current_user.id,
+        rejection_reason=payload.rejection_reason,
+        remarks=payload.remarks,
     )
 
 
@@ -492,12 +503,16 @@ async def manager_dashboard(
     ],
 )
 async def pending_count(
+    current_user=Depends(
+        get_current_active_user
+    ),
     service: TimesheetService = Depends(
         get_timesheet_service
     ),
 ):
 
-    pending = await service.get_pending_timesheets(
+    pending = await service.pending_timesheets(
+        manager_id=current_user.id,
         page=1,
         page_size=1,
     )

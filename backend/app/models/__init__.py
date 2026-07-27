@@ -12,6 +12,7 @@ from .project_member_model import ProjectMember
 from .task_model import Task
 from .task_assignment_model import TaskAssignment
 from .timesheet_model import Timesheet
+from .subtask_model import SubTask
 from .email_verification_token_model import EmailVerificationToken
 from .password_reset_token_model import PasswordResetToken
 

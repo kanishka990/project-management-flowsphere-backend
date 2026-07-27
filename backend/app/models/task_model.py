@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.mixins import FullAuditMixin
 
+from app.models.subtask_model import SubTask
 
 from typing import TYPE_CHECKING
 
@@ -80,6 +81,13 @@ class Task(Base, FullAuditMixin):
         "Timesheet",
         back_populates="task",
         lazy="selectin",
+    )
+
+    subtasks: Mapped[List["SubTask"]] = relationship(
+    "SubTask",
+    back_populates="task",
+    cascade="all, delete-orphan",
+    lazy="selectin",
     )
 
     def __repr__(self):
