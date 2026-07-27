@@ -158,6 +158,55 @@ DEFAULT_ROLES = [
     {"name": "Business Analyst", "description": "Requirements gathering and backlog management"}
 ]
 
+CRUD_READY_ROLE_PERMISSIONS = {
+    "Project Manager": {
+        "users:read",
+        "projects:create",
+        "projects:read",
+        "projects:update",
+        "projects:delete",
+        "tasks:create",
+        "tasks:read",
+        "tasks:update",
+        "tasks:delete",
+        "tasks:assign",
+        "subtasks:create",
+        "subtasks:read",
+        "subtasks:update",
+        "subtasks:delete",
+    },
+    "Team Lead": {
+        "users:read",
+        "projects:read",
+        "tasks:create",
+        "tasks:read",
+        "tasks:update",
+        "tasks:assign",
+        "subtasks:create",
+        "subtasks:read",
+        "subtasks:update",
+        "subtasks:delete",
+    },
+    "Developer": {
+        "projects:read",
+        "tasks:read",
+        "subtasks:read",
+        "subtasks:update",
+    },
+    "Tester": {
+        "projects:read",
+        "tasks:read",
+        "subtasks:read",
+        "subtasks:update",
+    },
+    "Business Analyst": {
+        "projects:read",
+        "tasks:read",
+        "subtasks:read",
+        "subtasks:update",
+    },
+}
+
 async def init_db(session: AsyncSession):
     print("Starting Database Initialization...")
 
@@ -262,6 +311,8 @@ async def init_db(session: AsyncSession):
             elif role_name == "HOD" and perm.code.startswith("users:") and not perm.code.endswith(":delete"):
                 role_obj.permissions.append(perm)
             elif role_name == "Project Manager" and perm.code == "users:read":
+                role_obj.permissions.append(perm)
+            elif perm.code in CRUD_READY_ROLE_PERMISSIONS.get(role_name, set()):
                 role_obj.permissions.append(perm)
                 
     await session.commit()
