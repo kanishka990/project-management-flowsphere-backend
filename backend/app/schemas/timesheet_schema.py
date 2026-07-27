@@ -49,7 +49,7 @@ class TimesheetBase(BaseModel):
 
     shared_task_id: Optional[str] = None
 
-    subtask: Optional[str] = None
+    subtask_id: UUID
 
     deliverable: Optional[str] = None
 
@@ -103,7 +103,7 @@ class TimesheetUpdate(BaseModel):
 
     shared_task_id: Optional[str] = None
 
-    subtask: Optional[str] = None
+    subtask_id: Optional[UUID] = None
 
     deliverable: Optional[str] = None
 
@@ -271,14 +271,19 @@ class TimesheetFilter(BaseModel):
     employee_id: Optional[UUID] = None
     project_id: Optional[UUID] = None
     task_id: Optional[UUID] = None
+    subtask_id: Optional[UUID] = None
 
     status: Optional[TimesheetStatus] = None
     priority: Optional[Priority] = None
     verification: Optional[VerificationStatus] = None
     hit_or_miss: Optional[HitMiss] = None
 
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    # Renamed from start_date/end_date to from_date/to_date so this
+    # schema can be unpacked directly into
+    # TimesheetService.search_timesheets(**filter.model_dump())
+    # without a keyword-argument mismatch.
+    from_date: Optional[date] = None
+    to_date: Optional[date] = None
 
     search: Optional[str] = None
 
@@ -310,6 +315,7 @@ class TimesheetReportItem(BaseModel):
     employee_id: UUID
     project_id: UUID
     task_id: UUID
+    subtask_id: UUID
 
     work_date: date
 

@@ -23,6 +23,7 @@ from app.db.mixins import FullAuditMixin
 if TYPE_CHECKING:
     from app.models.project_model import Project
     from app.models.task_model import Task
+    from app.models.subtask_model import SubTask
     from app.models.user_model import User
 
 
@@ -98,9 +99,11 @@ class Timesheet(Base, FullAuditMixin):
         nullable=True,
     )
 
-    subtask: Mapped[Optional[str]] = mapped_column(
-        String(255),
-        nullable=True,
+    subtask_id: Mapped[UUIDType] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("subtasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     deliverable: Mapped[Optional[str]] = mapped_column(
@@ -244,12 +247,20 @@ class Timesheet(Base, FullAuditMixin):
         lazy="selectin",
     )
 
+    subtask: Mapped["SubTask"] = relationship(
+        "SubTask",
+        back_populates="timesheets",
+        lazy="selectin",
+    )
+
     def __repr__(self):
         return (
             f"<Timesheet("
+            f"id={self.id}, "
             f"employee={self.employee_id}, "
             f"project={self.project_id}, "
             f"task={self.task_id}, "
+            f"subtask={self.subtask_id}, "
             f"date={self.work_date}, "
             f"actual_hours={self.actual_hours}, "
             f"status={self.status.value})>"

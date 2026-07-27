@@ -17,6 +17,9 @@ from app.repositories.task_repository import TaskRepository
 from app.repositories.timesheet_repository import (
     TimesheetRepository,
 )
+from app.repositories.subtask_repository import (
+    SubTaskRepository,
+)
 
 from app.schemas.timesheet_schema import (
     TimesheetApprove,
@@ -38,12 +41,14 @@ class TimesheetService:
         assignment_repo: TaskAssignmentRepository,
         project_repo: ProjectRepository,
         task_repo: TaskRepository,
+        subtask_repo: SubTaskRepository,
     ):
         self.db = db
         self.timesheet_repo = timesheet_repo
         self.assignment_repo = assignment_repo
         self.project_repo = project_repo
         self.task_repo = task_repo
+        self.subtask_repo = subtask_repo
 
     # ==========================================================
     # CREATE TIMESHEET
@@ -68,6 +73,23 @@ class TimesheetService:
 
         if not task:
             raise ResourceNotFoundException("Task")
+
+        subtask = await self.subtask_repo.get_by_id(
+            payload.subtask_id
+        )
+
+        if not subtask:
+            raise ResourceNotFoundException("SubTask")
+
+        if subtask.task_id != payload.task_id:
+            raise ValidationException(
+                "SubTask does not belong to the selected Task."
+            )
+
+        if subtask.employee_id != employee_id:
+            raise ValidationException(
+                "This SubTask is not assigned to you."
+            )
 
         assignment = (
             await self.assignment_repo.get_assignment(
@@ -117,8 +139,8 @@ class TimesheetService:
             )
 
         return timesheet
-    
-        # ==========================================================
+
+    # ==========================================================
     # LIST TIMESHEETS
     # ==========================================================
 
@@ -129,6 +151,7 @@ class TimesheetService:
         employee_id: UUID | None = None,
         project_id: UUID | None = None,
         task_id: UUID | None = None,
+        subtask_id: UUID | None = None,
         status=None,
         work_date=None,
         sort_by: str = "created_at",
@@ -141,6 +164,7 @@ class TimesheetService:
             employee_id=employee_id,
             project_id=project_id,
             task_id=task_id,
+            subtask_id=subtask_id,
             status=status,
             work_date=work_date,
             sort_by=sort_by,
@@ -157,6 +181,7 @@ class TimesheetService:
         employee_id: UUID | None = None,
         project_id: UUID | None = None,
         task_id: UUID | None = None,
+        subtask_id: UUID | None = None,
         status=None,
         priority=None,
         verification=None,
@@ -172,6 +197,7 @@ class TimesheetService:
             employee_id=employee_id,
             project_id=project_id,
             task_id=task_id,
+            subtask_id=subtask_id,
             status=status,
             priority=priority,
             verification=verification,
@@ -250,6 +276,32 @@ class TimesheetService:
                     "Task is not assigned to this employee."
                 )
 
+        if "subtask_id" in update_data:
+
+            subtask = await self.subtask_repo.get_by_id(
+                update_data["subtask_id"]
+            )
+
+            if not subtask:
+                raise ResourceNotFoundException(
+                    "SubTask"
+                )
+
+            task_id = update_data.get(
+                "task_id",
+                timesheet.task_id,
+            )
+
+            if subtask.task_id != task_id:
+                raise ValidationException(
+                    "SubTask does not belong to the selected Task."
+                )
+
+            if subtask.employee_id != employee_id:
+                raise ValidationException(
+                    "This SubTask is not assigned to you."
+                )
+
         new_hours = update_data.get(
             "actual_hours",
             timesheet.actual_hours,
@@ -279,8 +331,8 @@ class TimesheetService:
             timesheet,
             **update_data,
         )
-    
-        # ==========================================================
+
+    # ==========================================================
     # DELETE TIMESHEET
     # ==========================================================
 
@@ -403,7 +455,7 @@ class TimesheetService:
             rejection_reason=rejection_reason,
             remarks=remarks,
         )
-    
+
     # ==========================================================
     # DASHBOARD SUMMARY
     # ==========================================================

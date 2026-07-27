@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import and_, or_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from app.models.subtask_model import SubTask
 
 from app.models.timesheet_model import (
     Timesheet,
@@ -50,6 +51,7 @@ class TimesheetRepository(BaseRepository):
                 selectinload(Timesheet.employee),
                 selectinload(Timesheet.project),
                 selectinload(Timesheet.task),
+                selectinload(Timesheet.subtask),
                 selectinload(Timesheet.approver),
             )
         )
@@ -70,8 +72,8 @@ class TimesheetRepository(BaseRepository):
             employee_id=employee_id,
             project_id=payload.project_id,
             task_id=payload.task_id,
+            subtask_id=payload.subtask_id,
             shared_task_id=payload.shared_task_id,
-            subtask=payload.subtask,
             deliverable=payload.deliverable,
             work_date=payload.work_date,
             priority=payload.priority,
@@ -130,6 +132,7 @@ class TimesheetRepository(BaseRepository):
         employee_id: UUID | None = None,
         project_id: UUID | None = None,
         task_id: UUID | None = None,
+        subtask_id: UUID | None = None,
         status: str | None = None,
         work_date: date | None = None,
         sort_by: str = "created_at",
@@ -142,6 +145,8 @@ class TimesheetRepository(BaseRepository):
                 selectinload(Timesheet.employee),
                 selectinload(Timesheet.project),
                 selectinload(Timesheet.task),
+                selectinload(Timesheet.subtask),
+                selectinload(Timesheet.approver),
             )
         )
 
@@ -158,6 +163,11 @@ class TimesheetRepository(BaseRepository):
         if task_id:
             stmt = stmt.where(
                 Timesheet.task_id == task_id
+            )
+
+        if subtask_id:
+            stmt = stmt.where(
+                Timesheet.subtask_id == subtask_id
             )
 
         if status:
@@ -184,10 +194,11 @@ class TimesheetRepository(BaseRepository):
             Timesheet.created_at,
         )
 
-        if sort_order.lower() == "asc":
-            stmt = stmt.order_by(order_column.asc())
-        else:
-            stmt = stmt.order_by(order_column.desc())
+        stmt = stmt.order_by(
+            order_column.asc()
+            if sort_order.lower() == "asc"
+            else order_column.desc()
+        )
 
         return await paginate(
             session=self.session,
@@ -274,9 +285,11 @@ class TimesheetRepository(BaseRepository):
             )
 
         if search:
+            stmt = stmt.join(SubTask)
+
             filters.append(
                 or_(
-                    Timesheet.subtask.ilike(f"%{search}%"),
+                    SubTask.title.ilike(f"%{search}%"),
                     Timesheet.deliverable.ilike(f"%{search}%"),
                     Timesheet.result_output.ilike(f"%{search}%"),
                     Timesheet.remarks.ilike(f"%{search}%"),
@@ -311,13 +324,16 @@ class TimesheetRepository(BaseRepository):
 
         stmt = (
             select(Timesheet)
+            .join(SubTask, Timesheet.subtask_id == SubTask.id)
             .where(
-                Timesheet.status == TimesheetStatus.PENDING
+                Timesheet.status == TimesheetStatus.PENDING,
+                SubTask.manager_id == manager_id,
             )
             .options(
                 selectinload(Timesheet.employee),
                 selectinload(Timesheet.project),
                 selectinload(Timesheet.task),
+                selectinload(Timesheet.subtask),
                 selectinload(Timesheet.approver),
             )
             .order_by(
@@ -649,15 +665,18 @@ class TimesheetRepository(BaseRepository):
         ) or 0
 
         pending = await self.count_by_status(
-            TimesheetStatus.PENDING
+            TimesheetStatus.PENDING,
+            employee_id,
         )
 
         approved = await self.count_by_status(
-            TimesheetStatus.APPROVED
+            TimesheetStatus.APPROVED,
+            employee_id,
         )
 
         rejected = await self.count_by_status(
-            TimesheetStatus.REJECTED
+            TimesheetStatus.REJECTED,
+            employee_id,
         )
 
         planned_hours = await self.total_planned_hours(
