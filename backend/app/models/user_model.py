@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from app.models.role_model import Role
     from app.models.task_assignment_model import TaskAssignment
     from app.models.timesheet_model import Timesheet
+    from app.models.subtask_model import SubTask
 
 
 class User(Base, FullAuditMixin):
@@ -135,6 +136,19 @@ class User(Base, FullAuditMixin):
         "ProjectMember",
         back_populates="user",
         cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    managed_subtasks: Mapped[list["SubTask"]] = relationship(
+        "SubTask",
+        foreign_keys="SubTask.manager_id",
+        back_populates="manager",
+        lazy="selectin",
+    )
+
+    assigned_subtasks: Mapped[list["SubTask"]] = relationship(
+        "SubTask",
+        foreign_keys="SubTask.employee_id",
+        back_populates="employee",
         lazy="selectin",
     )
 

@@ -22,23 +22,128 @@ MENUS = [
         "sort_order": 10,
         "submenus": [
             {
-                "code": "user_mgt", "title": "User Management", "path": "/setup/users", "icon": "users", "sort_order": 10,
-                "permissions": ["users:create", "users:read", "users:update", "users:delete"]
+                "code": "user_mgt",
+                "title": "User Management",
+                "path": "/setup/users",
+                "icon": "users",
+                "sort_order": 10,
+                "permissions": [
+                    "users:create",
+                    "users:read",
+                    "users:update",
+                    "users:delete",
+                ],
             },
             {
-                "code": "role_mgt", "title": "Role Management", "path": "/setup/roles", "icon": "shield", "sort_order": 20,
-                "permissions": ["roles:create", "roles:read", "roles:update", "roles:delete"]
+                "code": "role_mgt",
+                "title": "Role Management",
+                "path": "/setup/roles",
+                "icon": "shield",
+                "sort_order": 20,
+                "permissions": [
+                    "roles:create",
+                    "roles:read",
+                    "roles:update",
+                    "roles:delete",
+                ],
             },
             {
-                "code": "perm_mgt", "title": "Permission Management", "path": "/setup/permissions", "icon": "key-round", "sort_order": 30,
-                "permissions": ["permissions:create", "permissions:read", "permissions:update", "permissions:delete"]
+                "code": "perm_mgt",
+                "title": "Permission Management",
+                "path": "/setup/permissions",
+                "icon": "key-round",
+                "sort_order": 30,
+                "permissions": [
+                    "permissions:create",
+                    "permissions:read",
+                    "permissions:update",
+                    "permissions:delete",
+                ],
             },
             {
-                "code": "menu_mgt", "title": "Menu Management", "path": "/setup/menus", "icon": "panel-left", "sort_order": 40,
-                "permissions": ["menus:create", "menus:read", "menus:update", "menus:delete", "submenus:create", "submenus:read", "submenus:update", "submenus:delete"]
-            }
-        ]
-    }
+                "code": "menu_mgt",
+                "title": "Menu Management",
+                "path": "/setup/menus",
+                "icon": "panel-left",
+                "sort_order": 40,
+                "permissions": [
+                    "menus:create",
+                    "menus:read",
+                    "menus:update",
+                    "menus:delete",
+                    "submenus:create",
+                    "submenus:read",
+                    "submenus:update",
+                    "submenus:delete",
+                ],
+            },
+        ],
+    },
+
+    {
+        "code": "project_mgt",
+        "name": "Project Management",
+        "path": None,
+        "icon": "briefcase",
+        "sort_order": 20,
+        "submenus": [
+            {
+                "code": "project_mgt",
+                "title": "Projects",
+                "path": "/projects",
+                "icon": "folder-kanban",
+                "sort_order": 10,
+                "permissions": [
+                    "projects:create",
+                    "projects:read",
+                    "projects:update",
+                    "projects:delete",
+                ],
+            },
+            {
+                "code": "task_mgt",
+                "title": "Tasks",
+                "path": "/tasks",
+                "icon": "list-checks",
+                "sort_order": 20,
+                "permissions": [
+                    "tasks:create",
+                    "tasks:read",
+                    "tasks:update",
+                    "tasks:delete",
+                    "tasks:assign",
+                ],
+            },
+            {
+                "code": "subtask_mgt",
+                "title": "SubTasks",
+                "path": "/subtasks",
+                "icon": "git-branch-plus",
+                "sort_order": 30,
+                "permissions": [
+                    "subtasks:create",
+                    "subtasks:read",
+                    "subtasks:update",
+                    "subtasks:delete",
+                ],
+            },
+            {
+                "code": "timesheet_mgt",
+                "title": "Timesheets",
+                "path": "/timesheets",
+                "icon": "clock",
+                "sort_order": 40,
+                "permissions": [
+                    "timesheets:create",
+                    "timesheets:read",
+                    "timesheets:update",
+                    "timesheets:delete",
+                    "timesheets:approve",
+                    "timesheets:reject",
+                ],
+            },
+        ],
+    },
 ]
 
 DEFAULT_ROLES = [
