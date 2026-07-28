@@ -80,5 +80,18 @@ class TaskAssignment(Base, FullAuditMixin):
         lazy="selectin",
     )
 
+    @property
+    def employee_name(self) -> str | None:
+        return self.employee.full_name if self.employee else None
+
+
+    @property
+    def assigned_by_name(self) -> str | None:
+        return (
+            self.assigned_user.full_name
+            if self.assigned_user
+            else None
+        )
+
     def __repr__(self):
         return f"<TaskAssignment {self.id}>"
