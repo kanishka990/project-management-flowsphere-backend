@@ -139,6 +139,7 @@ async def delete_project(
 
 @router.post(
     "/{project_id}/members",
+    response_model=list[ProjectMemberResponse],
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(PermissionChecker(["projects:update"]))],
 )
@@ -157,6 +158,7 @@ async def assign_project_members(
 
 @router.get(
     "/{project_id}/members",
+    response_model=list[ProjectMemberResponse],
     dependencies=[Depends(PermissionChecker(["projects:read"]))],
 )
 async def get_project_members(
