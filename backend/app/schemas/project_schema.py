@@ -5,7 +5,7 @@ from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasPath, BaseModel, ConfigDict, Field
 
 from app.utils.pagination import PaginationResponse
 
@@ -86,6 +86,10 @@ class AssignProjectMembers(BaseModel):
 
 class ProjectMemberResponse(BaseModel):
     id: UUID
+    user: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasPath("user", "full_name"),
+    )
     project_id: UUID
     user_id: UUID
 

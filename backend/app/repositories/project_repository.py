@@ -188,8 +188,6 @@ class ProjectRepository(BaseRepository):
         created_by: UUID | None = None,
     ) -> list[ProjectMember]:
 
-        members: list[ProjectMember] = []
-
         for user_id in user_ids:
             stmt = select(ProjectMember).where(
                 ProjectMember.project_id == project_id,
@@ -199,7 +197,6 @@ class ProjectRepository(BaseRepository):
             existing = await self.session.scalar(stmt)
 
             if existing:
-                members.append(existing)
                 continue
 
             member = ProjectMember(
@@ -210,14 +207,34 @@ class ProjectRepository(BaseRepository):
             )
 
             self.session.add(member)
-            members.append(member)
 
         await self.session.flush()
 
-        for member in members:
-            await self.session.refresh(member)
+        if not user_ids:
+            return []
 
-        return members
+        stmt = (
+            select(ProjectMember)
+            .where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id.in_(user_ids),
+            )
+            .options(
+                selectinload(ProjectMember.user),
+            )
+        )
+
+        result = await self.session.scalars(stmt)
+        members_by_user_id = {
+            member.user_id: member
+            for member in result.all()
+        }
+
+        return [
+            members_by_user_id[user_id]
+            for user_id in user_ids
+            if user_id in members_by_user_id
+        ]
 
     async def get_project_members(
         self,
