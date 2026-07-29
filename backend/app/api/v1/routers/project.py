@@ -141,7 +141,7 @@ async def delete_project(
     "/{project_id}/members",
     response_model=list[ProjectMemberResponse],
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(PermissionChecker(["projects:update"]))],
+    dependencies=[Depends(PermissionChecker(["project_members:manage"]))],
 )
 async def assign_project_members(
     project_id: UUID,
@@ -171,7 +171,7 @@ async def get_project_members(
 @router.delete(
     "/{project_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(PermissionChecker(["projects:update"]))],
+    dependencies=[Depends(PermissionChecker(["project_members:manage"]))],
 )
 async def remove_project_member(
     project_id: UUID,

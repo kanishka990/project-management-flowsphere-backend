@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from uuid import UUID as UUIDType
+from datetime import date
 from typing import Optional, TYPE_CHECKING
+from uuid import UUID as UUIDType
 
 from sqlalchemy import (
     UUID,
@@ -86,12 +87,17 @@ class SubTask(Base, FullAuditMixin):
         nullable=False,
     )
 
-    start_date: Mapped[Optional[Date]] = mapped_column(
+    start_date: Mapped[Optional[date]] = mapped_column(
         Date,
         nullable=True,
     )
 
-    due_date: Mapped[Optional[Date]] = mapped_column(
+    due_date: Mapped[Optional[date]] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    completed_date: Mapped[Optional[date]] = mapped_column(
         Date,
         nullable=True,
     )

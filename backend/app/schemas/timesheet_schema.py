@@ -49,7 +49,7 @@ class TimesheetBase(BaseModel):
 
     shared_task_id: Optional[str] = None
 
-    subtask_id: UUID
+    subtask_id: Optional[UUID] = None
 
     deliverable: Optional[str] = None
 
@@ -315,7 +315,7 @@ class TimesheetReportItem(BaseModel):
     employee_id: UUID
     project_id: UUID
     task_id: UUID
-    subtask_id: UUID
+    subtask_id: Optional[UUID] = None
 
     work_date: date
 

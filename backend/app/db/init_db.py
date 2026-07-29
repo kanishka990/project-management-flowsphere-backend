@@ -77,6 +77,73 @@ MENUS = [
                     "submenus:delete",
                 ],
             },
+            {
+                "code": "department_mgt",
+                "title": "Departments",
+                "path": "/setup/departments",
+                "icon": "building-2",
+                "sort_order": 50,
+                "permissions": [
+                    "departments:create",
+                    "departments:read",
+                    "departments:update",
+                    "departments:delete",
+                ],
+            },
+        ],
+    },
+
+    {
+        "code": "dashboard",
+        "name": "Dashboards",
+        "path": None,
+        "icon": "layout-dashboard",
+        "sort_order": 15,
+        "submenus": [
+            {
+                "code": "employee_dashboard",
+                "title": "Employee Dashboard",
+                "path": "/dashboard/employee",
+                "icon": "user-round-check",
+                "sort_order": 10,
+                "permissions": [
+                    "dashboard:read",
+                    "dashboard:employee",
+                ],
+            },
+            {
+                "code": "project_dashboard",
+                "title": "Project Dashboard",
+                "path": "/dashboard/project",
+                "icon": "kanban-square",
+                "sort_order": 20,
+                "permissions": [
+                    "dashboard:read",
+                    "dashboard:project",
+                ],
+            },
+            {
+                "code": "team_dashboard",
+                "title": "Team Dashboard",
+                "path": "/dashboard/team",
+                "icon": "users-round",
+                "sort_order": 30,
+                "permissions": [
+                    "dashboard:read",
+                    "dashboard:team",
+                ],
+            },
+            {
+                "code": "department_dashboard",
+                "title": "Department Dashboard",
+                "path": "/dashboard/department",
+                "icon": "building",
+                "sort_order": 40,
+                "permissions": [
+                    "dashboard:read",
+                    "dashboard:department",
+                ],
+            },
         ],
     },
 
@@ -98,6 +165,7 @@ MENUS = [
                     "projects:read",
                     "projects:update",
                     "projects:delete",
+                    "project_members:manage",
                 ],
             },
             {
@@ -142,6 +210,19 @@ MENUS = [
                     "timesheets:reject",
                 ],
             },
+            {
+                "code": "resource_utilization",
+                "title": "Resource Utilization",
+                "path": "/resource-utilization",
+                "icon": "activity",
+                "sort_order": 50,
+                "permissions": [
+                    "resource_utilization:read",
+                    "resource_utilization:employee",
+                    "resource_utilization:team",
+                    "resource_utilization:department",
+                ],
+            },
         ],
     },
 ]
@@ -158,22 +239,40 @@ DEFAULT_ROLES = [
     {"name": "Business Analyst", "description": "Requirements gathering and backlog management"}
 ]
 
-TIMESHEET_PERMISSIONS = {
-    "timesheets:create",
-    "timesheets:read",
-    "timesheets:update",
-    "timesheets:delete",
-    "timesheets:approve",
-    "timesheets:reject",
+CATALOG_PERMISSION_CODES = {
+    perm_code
+    for menu in MENUS
+    for submenu in menu["submenus"]
+    for perm_code in submenu["permissions"]
 }
 
-CRUD_READY_ROLE_PERMISSIONS = {
+FULL_ACCESS_ROLES = {"SuperAdmin", "Admin"}
+
+ROLE_PERMISSION_MAP = {
+    "HOD": {
+        "users:create",
+        "users:read",
+        "users:update",
+        "departments:read",
+        "departments:update",
+        "projects:read",
+        "projects:update",
+        "tasks:read",
+        "subtasks:read",
+        "timesheets:read",
+        "timesheets:approve",
+        "timesheets:reject",
+        "dashboard:department",
+        "resource_utilization:department",
+    },
     "Project Manager": {
         "users:read",
+        "departments:read",
         "projects:create",
         "projects:read",
         "projects:update",
         "projects:delete",
+        "project_members:manage",
         "tasks:create",
         "tasks:read",
         "tasks:update",
@@ -183,9 +282,19 @@ CRUD_READY_ROLE_PERMISSIONS = {
         "subtasks:read",
         "subtasks:update",
         "subtasks:delete",
+        "timesheets:create",
+        "timesheets:read",
+        "timesheets:update",
+        "timesheets:delete",
+        "timesheets:approve",
+        "timesheets:reject",
+        "dashboard:project",
+        "dashboard:team",
+        "resource_utilization:team",
     },
     "Team Lead": {
         "users:read",
+        "departments:read",
         "projects:read",
         "tasks:create",
         "tasks:read",
@@ -195,26 +304,67 @@ CRUD_READY_ROLE_PERMISSIONS = {
         "subtasks:read",
         "subtasks:update",
         "subtasks:delete",
+        "timesheets:create",
+        "timesheets:read",
+        "timesheets:update",
+        "timesheets:delete",
+        "timesheets:approve",
+        "timesheets:reject",
+        "dashboard:team",
+        "resource_utilization:team",
     },
     "Developer": {
+        "departments:read",
         "projects:read",
         "tasks:read",
         "subtasks:read",
         "subtasks:update",
+        "timesheets:create",
+        "timesheets:read",
+        "timesheets:update",
+        "timesheets:delete",
+        "dashboard:employee",
+        "resource_utilization:employee",
     },
     "Tester": {
+        "departments:read",
         "projects:read",
         "tasks:read",
         "subtasks:read",
         "subtasks:update",
+        "timesheets:create",
+        "timesheets:read",
+        "timesheets:update",
+        "timesheets:delete",
+        "dashboard:employee",
+        "resource_utilization:employee",
     },
     "Business Analyst": {
+        "departments:read",
         "projects:read",
         "tasks:read",
         "subtasks:read",
         "subtasks:update",
+        "timesheets:create",
+        "timesheets:read",
+        "timesheets:update",
+        "timesheets:delete",
+        "dashboard:project",
+        "resource_utilization:employee",
     },
 }
+
+
+def desired_permission_codes_for_role(role_name: str) -> set[str]:
+    if role_name in FULL_ACCESS_ROLES:
+        return set(CATALOG_PERMISSION_CODES)
+    if role_name == "CEO":
+        return {
+            code
+            for code in CATALOG_PERMISSION_CODES
+            if code.endswith(":read")
+        }
+    return set(ROLE_PERMISSION_MAP.get(role_name, set()))
 
 async def init_db(session: AsyncSession):
     print("Starting Database Initialization...")
@@ -307,24 +457,21 @@ async def init_db(session: AsyncSession):
     all_perms = (await session.scalars(select(Permission))).all()
     roles_map = {r.name: r for r in all_roles}
 
+    perms_by_code = {perm.code: perm for perm in all_perms}
+
     for role_name, role_obj in roles_map.items():
-        current_perm_ids = {p.id for p in role_obj.permissions}
-        for perm in all_perms:
-            if perm.id in current_perm_ids:
-                continue
-            
-            if perm.code in TIMESHEET_PERMISSIONS:
-                role_obj.permissions.append(perm)
-            elif role_name == "SuperAdmin":
-                role_obj.permissions.append(perm)
-            elif role_name == "CEO" and perm.code.endswith(":read"):
-                role_obj.permissions.append(perm)
-            elif role_name == "HOD" and perm.code.startswith("users:") and not perm.code.endswith(":delete"):
-                role_obj.permissions.append(perm)
-            elif role_name == "Project Manager" and perm.code == "users:read":
-                role_obj.permissions.append(perm)
-            elif perm.code in CRUD_READY_ROLE_PERMISSIONS.get(role_name, set()):
-                role_obj.permissions.append(perm)
+        desired_codes = desired_permission_codes_for_role(role_name)
+        custom_permissions = [
+            perm
+            for perm in role_obj.permissions
+            if perm.code not in CATALOG_PERMISSION_CODES
+        ]
+        catalog_permissions = [
+            perms_by_code[perm_code]
+            for perm_code in sorted(desired_codes)
+            if perm_code in perms_by_code
+        ]
+        role_obj.permissions = custom_permissions + catalog_permissions
                 
     await session.commit()
 
