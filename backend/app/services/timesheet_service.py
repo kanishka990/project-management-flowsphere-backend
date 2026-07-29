@@ -115,6 +115,14 @@ class TimesheetService:
                 "Maximum 12 working hours allowed per day."
             )
 
+        payload.shared_task_id = str(subtask.id)
+
+        if payload.due_date is None:
+            payload.due_date = subtask.due_date
+
+        if payload.priority is None:
+            payload.priority = subtask.priority
+
         return await self.timesheet_repo.create(
             payload,
             employee_id,

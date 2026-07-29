@@ -166,6 +166,56 @@ async def list_timesheets(
     )
 
 
+@router.get(
+    "/search",
+    response_model=TimesheetListResponse,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                ["timesheets:read"]
+            )
+        )
+    ],
+)
+async def search_timesheets(
+    employee_id: UUID | None = Query(None),
+    project_id: UUID | None = Query(None),
+    task_id: UUID | None = Query(None),
+    subtask_id: UUID | None = Query(None),
+    status: str | None = Query(None),
+    priority: str | None = Query(None),
+    verification: str | None = Query(None),
+    hit_or_miss: str | None = Query(None),
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None),
+    search: str | None = Query(None),
+    pagination: PaginationParams = Depends(PaginationParams),
+    service: TimesheetService = Depends(get_timesheet_service),
+):
+
+    items, total, actual_page_size = await service.search_timesheets(
+        employee_id=employee_id,
+        project_id=project_id,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        status=status,
+        priority=priority,
+        verification=verification,
+        hit_or_miss=hit_or_miss,
+        from_date=from_date,
+        to_date=to_date,
+        search=search,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+
+    return format_pagination_response(
+        items,
+        pagination.page,
+        actual_page_size,
+        total,
+    )
+
 # ==========================================================
 # Pending Timesheets
 # ==========================================================

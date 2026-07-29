@@ -97,8 +97,8 @@ class TimesheetRepository(BaseRepository):
         await self.session.refresh(timesheet)
 
         return timesheet
-    
-        # =========================================================
+
+    # =========================================================
     # UPDATE
     # =========================================================
 
@@ -206,7 +206,8 @@ class TimesheetRepository(BaseRepository):
             page=page,
             page_size=page_size,
         )
-        # =========================================================
+
+    # =========================================================
     # SEARCH & FILTER
     # =========================================================
 
@@ -380,177 +381,7 @@ class TimesheetRepository(BaseRepository):
         result = await self.session.scalar(stmt)
 
         return float(result or 0)
-    
-        # =========================================================
-    # SEARCH & FILTER
-    # =========================================================
 
-    async def search(
-        self,
-        *,
-        employee_id: UUID | None = None,
-        project_id: UUID | None = None,
-        task_id: UUID | None = None,
-        status=None,
-        priority=None,
-        verification=None,
-        hit_or_miss=None,
-        from_date: date | None = None,
-        to_date: date | None = None,
-        search: str | None = None,
-        page: int = 1,
-        page_size: int = 20,
-    ):
-
-        stmt = (
-            select(Timesheet)
-            .options(
-                selectinload(Timesheet.employee),
-                selectinload(Timesheet.project),
-                selectinload(Timesheet.task),
-                selectinload(Timesheet.approver),
-            )
-        )
-
-        filters = []
-
-        if employee_id:
-            filters.append(
-                Timesheet.employee_id == employee_id
-            )
-
-        if project_id:
-            filters.append(
-                Timesheet.project_id == project_id
-            )
-
-        if task_id:
-            filters.append(
-                Timesheet.task_id == task_id
-            )
-
-        if status:
-            filters.append(
-                Timesheet.status == status
-            )
-
-        if priority:
-            filters.append(
-                Timesheet.priority == priority
-            )
-
-        if verification:
-            filters.append(
-                Timesheet.verification == verification
-            )
-
-        if hit_or_miss:
-            filters.append(
-                Timesheet.hit_or_miss == hit_or_miss
-            )
-
-        if from_date:
-            filters.append(
-                Timesheet.work_date >= from_date
-            )
-
-        if to_date:
-            filters.append(
-                Timesheet.work_date <= to_date
-            )
-
-        if search:
-            filters.append(
-                or_(
-                    Timesheet.subtask.ilike(f"%{search}%"),
-                    Timesheet.deliverable.ilike(f"%{search}%"),
-                    Timesheet.result_output.ilike(f"%{search}%"),
-                    Timesheet.remarks.ilike(f"%{search}%"),
-                )
-            )
-
-        if filters:
-            stmt = stmt.where(and_(*filters))
-
-        stmt = stmt.order_by(
-            Timesheet.work_date.desc(),
-            Timesheet.created_at.desc(),
-        )
-
-        return await paginate(
-            session=self.session,
-            statement=stmt,
-            page=page,
-            page_size=page_size,
-        )
-
-    # =========================================================
-    # PENDING FOR MANAGER
-    # =========================================================
-
-    async def pending_for_manager(
-        self,
-        manager_id: UUID,
-        page: int = 1,
-        page_size: int = 20,
-    ):
-
-        stmt = (
-            select(Timesheet)
-            .where(
-                Timesheet.status == TimesheetStatus.PENDING
-            )
-            .options(
-                selectinload(Timesheet.employee),
-                selectinload(Timesheet.project),
-                selectinload(Timesheet.task),
-                selectinload(Timesheet.approver),
-            )
-            .order_by(
-                Timesheet.created_at.desc()
-            )
-        )
-
-        return await paginate(
-            session=self.session,
-            statement=stmt,
-            page=page,
-            page_size=page_size,
-        )
-
-    # =========================================================
-    # TOTAL HOURS
-    # =========================================================
-
-    async def total_hours(
-        self,
-        employee_id: UUID,
-        work_date: date,
-        exclude_id: UUID | None = None,
-    ) -> float:
-
-        stmt = (
-            select(
-                func.coalesce(
-                    func.sum(Timesheet.actual_hours),
-                    0,
-                )
-            )
-            .where(
-                Timesheet.employee_id == employee_id,
-                Timesheet.work_date == work_date,
-            )
-        )
-
-        if exclude_id:
-            stmt = stmt.where(
-                Timesheet.id != exclude_id
-            )
-
-        result = await self.session.scalar(stmt)
-
-        return float(result or 0)
-    
     # =========================================================
     # DASHBOARD HELPERS
     # =========================================================
@@ -558,12 +389,18 @@ class TimesheetRepository(BaseRepository):
     async def count_by_status(
         self,
         status: TimesheetStatus,
+        employee_id: UUID | None = None,
     ) -> int:
 
         stmt = (
             select(func.count(Timesheet.id))
             .where(Timesheet.status == status)
         )
+
+        if employee_id:
+            stmt = stmt.where(
+                Timesheet.employee_id == employee_id
+            )
 
         return int(await self.session.scalar(stmt) or 0)
 
@@ -739,7 +576,7 @@ class TimesheetRepository(BaseRepository):
     ):
         return await self.dashboard_summary()
 
-        # =========================================================
+    # =========================================================
     # DAILY REPORT
     # =========================================================
 
@@ -803,6 +640,7 @@ class TimesheetRepository(BaseRepository):
         result = await self.session.execute(stmt)
 
         return result.mappings().all()
+
     # =========================================================
     # YEARLY REPORT
     # =========================================================
@@ -843,4 +681,3 @@ class TimesheetRepository(BaseRepository):
         result = await self.session.execute(stmt)
 
         return result.mappings().all()
-        

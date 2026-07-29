@@ -90,21 +90,16 @@ class Timesheet(Base, FullAuditMixin):
         index=True,
     )
 
-    # =====================================================
-    # Work Details
-    # =====================================================
-
-    shared_task_id: Mapped[Optional[str]] = mapped_column(
-        String(100),
-        nullable=True,
-    )
-
     subtask_id: Mapped[UUIDType] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("subtasks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+
+    # =====================================================
+    # Work Details
+    # =====================================================
 
     deliverable: Mapped[Optional[str]] = mapped_column(
         Text,
@@ -132,16 +127,6 @@ class Timesheet(Base, FullAuditMixin):
         Float,
         default=0,
         nullable=False,
-    )
-
-    due_date: Mapped[Optional[date]] = mapped_column(
-        Date,
-        nullable=True,
-    )
-
-    actual_completion_date: Mapped[Optional[date]] = mapped_column(
-        Date,
-        nullable=True,
     )
 
     # =====================================================
@@ -261,7 +246,7 @@ class Timesheet(Base, FullAuditMixin):
             f"project={self.project_id}, "
             f"task={self.task_id}, "
             f"subtask={self.subtask_id}, "
-            f"date={self.work_date}, "
+            f"work_date={self.work_date}, "
             f"actual_hours={self.actual_hours}, "
             f"status={self.status.value})>"
         )
