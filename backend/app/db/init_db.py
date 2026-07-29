@@ -158,6 +158,15 @@ DEFAULT_ROLES = [
     {"name": "Business Analyst", "description": "Requirements gathering and backlog management"}
 ]
 
+TIMESHEET_PERMISSIONS = {
+    "timesheets:create",
+    "timesheets:read",
+    "timesheets:update",
+    "timesheets:delete",
+    "timesheets:approve",
+    "timesheets:reject",
+}
+
 CRUD_READY_ROLE_PERMISSIONS = {
     "Project Manager": {
         "users:read",
@@ -304,7 +313,9 @@ async def init_db(session: AsyncSession):
             if perm.id in current_perm_ids:
                 continue
             
-            if role_name == "SuperAdmin":
+            if perm.code in TIMESHEET_PERMISSIONS:
+                role_obj.permissions.append(perm)
+            elif role_name == "SuperAdmin":
                 role_obj.permissions.append(perm)
             elif role_name == "CEO" and perm.code.endswith(":read"):
                 role_obj.permissions.append(perm)

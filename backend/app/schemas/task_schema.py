@@ -46,7 +46,7 @@ class TaskResponse(TaskBase):
     created_at: datetime
     updated_at: datetime
 
-    assignment: Optional[TaskAssignmentInfo] = None
+    assignment: Optional[TaskAssignmentInfo] = []
 
     model_config = ConfigDict(from_attributes=True)
 

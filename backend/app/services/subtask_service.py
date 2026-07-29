@@ -132,6 +132,28 @@ class SubTaskService:
                     "Subtask already exists in this task."
                 )
 
+        if (
+            "manager_id" in update_data
+            and update_data["manager_id"] != subtask.manager_id
+        ):
+            manager = await self.user_repo.get_by_id(
+                update_data["manager_id"],
+            )
+
+            if not manager:
+                raise ResourceNotFoundException("Manager")
+
+        if (
+            "employee_id" in update_data
+            and update_data["employee_id"] != subtask.employee_id
+        ):
+            employee = await self.user_repo.get_by_id(
+                update_data["employee_id"],
+            )
+
+            if not employee:
+                raise ResourceNotFoundException("Employee")
+
         update_data["updated_by"] = updated_by
 
         return await self.subtask_repo.update(
