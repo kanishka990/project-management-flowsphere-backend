@@ -394,7 +394,7 @@ async def approve_timesheet(
     dependencies=[
         Depends(
             PermissionChecker(
-                ["timesheets:approve"]
+                ["timesheets:reject"]
             )
         )
     ],

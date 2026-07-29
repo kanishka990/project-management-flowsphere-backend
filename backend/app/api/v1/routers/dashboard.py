@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 from app.repositories.dashboard_repository import DashboardRepository
 from app.services.dashboard_service import DashboardService
@@ -29,6 +30,14 @@ def get_dashboard_service(
 @router.get(
     "/employee",
     response_model=list[EmployeeDashboardResponse],
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                ["dashboard:read", "dashboard:employee"],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def employee_dashboard(
     service: DashboardService = Depends(get_dashboard_service),
@@ -39,6 +48,14 @@ async def employee_dashboard(
 @router.get(
     "/project",
     response_model=list[ProjectDashboardResponse],
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                ["dashboard:read", "dashboard:project"],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def project_dashboard(
     service: DashboardService = Depends(get_dashboard_service),
@@ -49,6 +66,14 @@ async def project_dashboard(
 @router.get(
     "/team",
     response_model=list[TeamDashboardResponse],
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                ["dashboard:read", "dashboard:team"],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def team_dashboard(
     service: DashboardService = Depends(get_dashboard_service),
@@ -59,6 +84,14 @@ async def team_dashboard(
 @router.get(
     "/department",
     response_model=list[DepartmentDashboardResponse],
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                ["dashboard:read", "dashboard:department"],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def department_dashboard(
     service: DashboardService = Depends(get_dashboard_service),

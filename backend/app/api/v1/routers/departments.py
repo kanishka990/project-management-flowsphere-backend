@@ -2,7 +2,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth_dependencies import get_current_active_user
 from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 from app.repositories.department_repository import DepartmentRepository
@@ -35,7 +34,7 @@ async def create_department(
 @router.get(
     "/",
     response_model=DepartmentListResponse,
-    dependencies=[Depends(get_current_active_user)],
+    dependencies=[Depends(PermissionChecker(["departments:read"]))],
 )
 async def list_departments(
     search: str | None = Query(None),
@@ -56,7 +55,7 @@ async def list_departments(
 @router.get(
     "/{dept_id}",
     response_model=DepartmentResponse,
-    dependencies=[Depends(get_current_active_user)],
+    dependencies=[Depends(PermissionChecker(["departments:read"]))],
 )
 async def get_department(
     dept_id: UUID,

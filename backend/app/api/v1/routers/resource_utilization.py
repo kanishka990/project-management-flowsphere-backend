@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies.permissions import PermissionChecker
 from app.db.session import get_db
 
 from app.services.resource_utilization_service import (
@@ -37,6 +38,19 @@ def get_resource_service(
 @router.get(
     "/employee/{employee_id}",
     response_model=ResourceUtilizationResponse,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                [
+                    "resource_utilization:read",
+                    "resource_utilization:employee",
+                    "resource_utilization:team",
+                    "resource_utilization:department",
+                ],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def employee_utilization(
     employee_id: UUID,
@@ -56,6 +70,18 @@ async def employee_utilization(
 @router.get(
     "/employees",
     response_model=list[ResourceUtilizationResponse],
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                [
+                    "resource_utilization:read",
+                    "resource_utilization:team",
+                    "resource_utilization:department",
+                ],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def all_resources(
     service: ResourceUtilizationService = Depends(
@@ -72,6 +98,18 @@ async def all_resources(
 @router.get(
     "/dashboard",
     response_model=ResourceUtilizationDashboardResponse,
+    dependencies=[
+        Depends(
+            PermissionChecker(
+                [
+                    "resource_utilization:read",
+                    "resource_utilization:team",
+                    "resource_utilization:department",
+                ],
+                match_all=False,
+            )
+        )
+    ],
 )
 async def dashboard(
     service: ResourceUtilizationService = Depends(
