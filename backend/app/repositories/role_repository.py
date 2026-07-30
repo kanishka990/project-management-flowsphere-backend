@@ -27,6 +27,14 @@ class RoleRepository(BaseRepository):
         )
         return await self.session.scalar(stmt)
 
+    async def get_with_permissions(self, role_id: UUID) -> Role | None:
+        stmt = (
+            select(Role)
+            .where(Role.id == role_id, Role.is_deleted == False)
+            .options(selectinload(Role.permissions))
+        )
+        return await self.session.scalar(stmt)
+
     async def get_by_ids(self, role_ids: list[UUID]) -> list[Role]:
         if not role_ids:
             return []
@@ -72,15 +80,20 @@ class RoleRepository(BaseRepository):
             page_size=page_size,
         )
 
-    async def create(self, payload: RoleCreate) -> Role:
+    async def create(
+        self,
+        payload: RoleCreate,
+        permissions: list[Permission] | None = None,
+    ) -> Role:
         role = Role(
             name=payload.name,
             description=payload.description,
+            permissions=permissions or [],
         )
         self.session.add(role)
         await self.session.flush()
-        await self.session.refresh(role)
-        return role
+        loaded_role = await self.get_with_permissions(role.id)
+        return loaded_role or role
 
     _UPDATABLE_FIELDS = frozenset({"name", "description", "updated_by"})
 
@@ -89,8 +102,8 @@ class RoleRepository(BaseRepository):
             if key in self._UPDATABLE_FIELDS:
                 setattr(role, key, value)
         await self.session.flush()
-        await self.session.refresh(role)
-        return role
+        loaded_role = await self.get_with_permissions(role.id)
+        return loaded_role or role
 
     async def delete(self, role: Role) -> None:
         await self.session.delete(role)

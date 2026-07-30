@@ -38,6 +38,17 @@ class PermissionRepository(BaseRepository):
         )
         return await self.session.scalar(stmt)
 
+    async def get_by_ids(self, permission_ids: list[UUID]) -> list[Permission]:
+        if not permission_ids:
+            return []
+
+        stmt = select(Permission).where(
+            Permission.id.in_(permission_ids),
+            Permission.is_deleted == False,
+        )
+        result = await self.session.scalars(stmt)
+        return result.all()
+
     async def get_all(
         self,
         search: str | None = None,
@@ -79,7 +90,17 @@ class PermissionRepository(BaseRepository):
         await self.session.flush()
 
     async def get_roles(self, permission: Permission) -> list[Role]:
-        return permission.roles
+        stmt = (
+            select(Role)
+            .join(role_permissions, Role.id == role_permissions.c.role_id)
+            .where(
+                role_permissions.c.permission_id == permission.id,
+                Role.is_deleted == False,
+            )
+            .options(selectinload(Role.permissions))
+        )
+        result = await self.session.scalars(stmt)
+        return list(result.unique().all())
 
     async def get_users(self, permission_id: UUID) -> list[User]:
         stmt = (

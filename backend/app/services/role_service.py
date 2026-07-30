@@ -4,6 +4,7 @@ from app.core.exceptions import ResourceConflictException, ResourceNotFoundExcep
 from app.repositories.role_repository import RoleRepository
 from app.repositories.permission_repository import PermissionRepository
 from app.schemas.role_schema import RoleCreate, RoleUpdate
+from app.models.permission_model import Permission
 
 class RoleService:
     def __init__(
@@ -17,9 +18,26 @@ class RoleService:
     async def create_role(self, payload: RoleCreate):
         if await self.role_repo.get_by_name(payload.name):
             raise ValidationException("Role name already exists")
-        
-        role = await self.role_repo.create(payload)
+
+        permissions = await self._get_permissions_by_ids(payload.permission_ids)
+        role = await self.role_repo.create(payload, permissions=permissions)
         return role
+
+    async def _get_permissions_by_ids(self, permission_ids: list[UUID]) -> list[Permission]:
+        if not permission_ids:
+            return []
+
+        permissions = await self.permission_repo.get_by_ids(permission_ids)
+        permissions_by_id = {permission.id: permission for permission in permissions}
+        missing_permission_ids = [
+            str(permission_id)
+            for permission_id in permission_ids
+            if permission_id not in permissions_by_id
+        ]
+        if missing_permission_ids:
+            raise ResourceNotFoundException(f"Permission(s): {', '.join(missing_permission_ids)}")
+
+        return [permissions_by_id[permission_id] for permission_id in permission_ids]
 
     async def get_role_by_id(self, role_id: UUID):
         role = await self.role_repo.get_by_id(role_id)
@@ -75,12 +93,7 @@ class RoleService:
 
     async def replace_permissions(self, role_id: UUID, permission_ids: list[UUID]):
         role = await self.get_role_by_id(role_id)
-        permissions = []
-        for permission_id in permission_ids:
-            permission = await self.permission_repo.get_by_id(permission_id)
-            if not permission:
-                raise ResourceNotFoundException("Permission")
-            permissions.append(permission)
+        permissions = await self._get_permissions_by_ids(permission_ids)
         await self.role_repo.replace_permissions(role, permissions)
         return permissions
 
