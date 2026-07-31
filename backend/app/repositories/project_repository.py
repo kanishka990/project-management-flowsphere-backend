@@ -12,6 +12,10 @@ from app.repositories.base_repository import BaseRepository
 from app.schemas.project_schema import ProjectCreate
 from app.utils.pagination import paginate
 
+from app.models.task_model import Task
+from app.models.subtask_model import SubTask
+from app.models.task_assignment_model import TaskAssignment
+
 
 class ProjectRepository(BaseRepository):
     def __init__(self, session: AsyncSession):
@@ -265,3 +269,76 @@ class ProjectRepository(BaseRepository):
 
         await self.session.execute(stmt)
         await self.session.flush()
+        
+
+        async def get_projects_by_user(
+            self,
+            user_id: UUID,
+        ) -> list[dict]:
+
+            stmt = (
+                select(Project)
+                .join(ProjectMember)
+                .where(ProjectMember.user_id == user_id)
+                .options(
+                    selectinload(Project.manager),
+                    selectinload(Project.tasks)
+                    .selectinload(Task.assignments),
+                    selectinload(Project.tasks)
+                    .selectinload(Task.subtasks),
+                )
+            )
+
+            result = await self.session.scalars(stmt)
+            projects = result.unique().all()
+
+            response = []
+
+            for project in projects:
+                tasks = []
+                subtasks = []
+
+                for task in project.tasks:
+
+                    assigned = any(
+                        assignment.user_id == user_id
+                        for assignment in task.assignments
+                    )
+
+                    if not assigned:
+                        continue
+
+                    tasks.append(
+                        {
+                            "id": task.id,
+                            "title": task.title,
+                        }
+                    )
+
+                    for subtask in task.subtasks:
+                        subtasks.append(
+                            {
+                                "id": subtask.id,
+                                "title": subtask.title,
+                            }
+                        )
+
+                response.append(
+                    {
+                        "project_id": project.id,
+                        "project_name": project.name,
+                        "description": project.description,
+                        "status": project.status,
+                        "priority": project.priority,
+                        "start_date": project.start_date,
+                        "end_date": project.end_date,
+                        "manager_id": project.manager_id,
+                        "manager_name": project.manager_name,
+                        "tasks": tasks,
+                        "subtasks": subtasks,
+                        "created_at": project.created_at,
+                        "updated_at": project.updated_at,
+                    }
+                )
+
+            return response

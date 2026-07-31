@@ -17,6 +17,7 @@ from app.schemas.project_schema import (
     ProjectListResponse,
     AssignProjectMembers,
     ProjectMemberResponse,
+    ProjectByUserResponse,
 )
 
 from app.utils.pagination import (
@@ -88,6 +89,17 @@ async def list_projects(
         actual_page_size,
         total,
     )
+
+@router.get(
+    "/user/{user_id}",
+    response_model=list[ProjectByUserResponse],
+    dependencies=[Depends(PermissionChecker(["projects:read"]))],
+)
+async def get_projects_by_user(
+    user_id: UUID,
+    service: ProjectService = Depends(get_project_service),
+):
+    return await service.get_projects_by_user(user_id)
 
 
 @router.get(
