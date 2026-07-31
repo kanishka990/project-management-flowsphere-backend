@@ -46,6 +46,14 @@ class ProjectService:
             created_by,
         )
 
+        async def get_projects_by_user(
+            self,
+            user_id: UUID,
+        ):
+            return await self.project_repo.get_projects_by_user(
+                user_id=user_id,
+            )
+
     async def get_project_by_id(
         self,
         project_id: UUID,

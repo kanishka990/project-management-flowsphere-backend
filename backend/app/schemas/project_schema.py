@@ -65,7 +65,7 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(ProjectBase):
     id: UUID
     manager_name: Optional[str] = None
-    
+
     created_at: datetime
     updated_at: datetime
 
@@ -92,6 +92,47 @@ class ProjectMemberResponse(BaseModel):
     )
     project_id: UUID
     user_id: UUID
+
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================================================
+# Projects By User Schemas
+# ==========================================================
+
+class ProjectTaskResponse(BaseModel):
+    id: UUID
+    title: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectSubtaskResponse(BaseModel):
+    id: UUID
+    title: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectByUserResponse(BaseModel):
+    project_id: UUID
+    project_name: str
+    description: Optional[str] = None
+
+    status: ProjectStatus
+    priority: ProjectPriority
+
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+    manager_id: UUID
+    manager_name: Optional[str] = None
+
+    tasks: List[ProjectTaskResponse] = Field(default_factory=list)
+    subtasks: List[ProjectSubtaskResponse] = Field(default_factory=list)
 
     created_at: datetime
     updated_at: datetime
