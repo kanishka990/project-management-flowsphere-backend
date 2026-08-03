@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth_dependencies import (
@@ -9,6 +10,12 @@ from app.api.dependencies.auth_dependencies import (
 from app.api.dependencies.permissions import PermissionChecker
 
 from app.db.session import get_db
+
+from app.models.issue_model import (
+    IssuePriority,
+    IssueStatus,
+    IssueType,
+)
 
 from app.repositories.issue_repository import IssueRepository
 from app.repositories.project_repository import ProjectRepository
@@ -32,6 +39,10 @@ router = APIRouter(
     prefix="/issues",
     tags=["Issues"],
 )
+
+
+class IssueAssignRequest(BaseModel):
+    assignee_id: UUID
 
 
 def get_issue_service(
@@ -70,9 +81,10 @@ async def create_issue(
 async def list_issues(
     project_id: UUID | None = Query(None),
     assignee_id: UUID | None = Query(None),
-    status_filter: str | None = Query(None, alias="status"),
-    priority: str | None = Query(None),
-    issue_type: str | None = Query(None),
+    reporter_id: UUID | None = Query(None),
+    status_filter: IssueStatus | None = Query(None, alias="status"),
+    priority: IssuePriority | None = Query(None),
+    issue_type: IssueType | None = Query(None),
     search: str | None = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
@@ -84,6 +96,7 @@ async def list_issues(
         page_size=pagination.page_size,
         project_id=project_id,
         assignee_id=assignee_id,
+        reporter_id=reporter_id,
         status=status_filter,
         priority=priority,
         issue_type=issue_type,
@@ -130,6 +143,40 @@ async def update_issue(
     )
 
 
+@router.patch(
+    "/{issue_id}/assign",
+    response_model=IssueResponse,
+    dependencies=[Depends(PermissionChecker(["issues:update"]))],
+)
+async def assign_issue(
+    issue_id: UUID,
+    payload: IssueAssignRequest,
+    current_user=Depends(get_current_active_user),
+    service: IssueService = Depends(get_issue_service),
+):
+    return await service.assign_issue(
+        issue_id=issue_id,
+        assignee_id=payload.assignee_id,
+        updated_by=current_user.id,
+    )
+
+
+@router.patch(
+    "/{issue_id}/close",
+    response_model=IssueResponse,
+    dependencies=[Depends(PermissionChecker(["issues:update"]))],
+)
+async def close_issue(
+    issue_id: UUID,
+    current_user=Depends(get_current_active_user),
+    service: IssueService = Depends(get_issue_service),
+):
+    return await service.close_issue(
+        issue_id,
+        current_user.id,
+    )
+
+
 @router.delete(
     "/{issue_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -140,7 +187,7 @@ async def delete_issue(
     service: IssueService = Depends(get_issue_service),
 ):
     await service.delete_issue(issue_id)
-    return {}
+    return None
 
 
 @router.get(

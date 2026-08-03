@@ -6,7 +6,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.issue_model import Issue
+from app.models.issue_model import (
+    Issue,
+    IssuePriority,
+    IssueStatus,
+    IssueType,
+)
+
 from app.schemas.issue_schema import IssueCreate
 from app.repositories.base_repository import BaseRepository
 from app.utils.pagination import paginate
@@ -51,9 +57,10 @@ class IssueRepository(BaseRepository):
         page_size: int = 20,
         project_id: UUID | None = None,
         assignee_id: UUID | None = None,
-        status: str | None = None,
-        priority: str | None = None,
-        issue_type: str | None = None,
+        reporter_id: UUID | None = None,
+        status: IssueStatus | None = None,
+        priority: IssuePriority | None = None,
+        issue_type: IssueType | None = None,
         search: str | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
@@ -74,6 +81,9 @@ class IssueRepository(BaseRepository):
         if assignee_id:
             stmt = stmt.where(Issue.assignee_id == assignee_id)
 
+        if reporter_id:
+            stmt = stmt.where(Issue.reporter_id == reporter_id)
+
         if status:
             stmt = stmt.where(Issue.status == status)
 
@@ -87,6 +97,7 @@ class IssueRepository(BaseRepository):
             query = f"%{search.lower()}%"
             stmt = stmt.where(
                 func.lower(Issue.summary).like(query)
+                | func.lower(Issue.issue_key).like(query)
             )
 
         sort_mapping = {

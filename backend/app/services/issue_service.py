@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import (
     ResourceNotFoundException,
     ValidationException,
+)
+
+from app.models.issue_model import (
+    IssuePriority,
+    IssueStatus,
+    IssueType,
 )
 
 from app.repositories.issue_repository import IssueRepository
@@ -89,9 +96,10 @@ class IssueService:
         page_size: int = 20,
         project_id: UUID | None = None,
         assignee_id: UUID | None = None,
-        status: str | None = None,
-        priority: str | None = None,
-        issue_type: str | None = None,
+        reporter_id: UUID | None = None,
+        status: IssueStatus | None = None,
+        priority: IssuePriority | None = None,
+        issue_type: IssueType | None = None,
         search: str | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
@@ -101,6 +109,7 @@ class IssueService:
             page_size=page_size,
             project_id=project_id,
             assignee_id=assignee_id,
+            reporter_id=reporter_id,
             status=status,
             priority=priority,
             issue_type=issue_type,
@@ -134,6 +143,24 @@ class IssueService:
                     "Assignee"
                 )
 
+        if (
+            "story_points" in update_data
+            and update_data["story_points"] is not None
+            and update_data["story_points"] < 0
+        ):
+            raise ValidationException(
+                "Story points cannot be negative."
+            )
+
+        if (
+            "due_date" in update_data
+            and update_data["due_date"] is not None
+            and update_data["due_date"] < date.today()
+        ):
+            raise ValidationException(
+                "Due date cannot be in the past."
+            )
+
         update_data["updated_by"] = updated_by
 
         return await self.issue_repo.update(
@@ -166,4 +193,40 @@ class IssueService:
 
         return await self.issue_repo.get_project_issues(
             project_id
+        )
+
+    async def close_issue(
+        self,
+        issue_id: UUID,
+        updated_by: UUID,
+    ):
+        issue = await self.get_issue_by_id(issue_id)
+
+        return await self.issue_repo.update(
+            issue,
+            status=IssueStatus.CLOSED,
+            updated_by=updated_by,
+        )
+
+    async def assign_issue(
+        self,
+        issue_id: UUID,
+        assignee_id: UUID,
+        updated_by: UUID,
+    ):
+        issue = await self.get_issue_by_id(issue_id)
+
+        assignee = await self.user_repo.get_by_id(
+            assignee_id
+        )
+
+        if not assignee:
+            raise ResourceNotFoundException(
+                "Assignee"
+            )
+
+        return await self.issue_repo.update(
+            issue,
+            assignee_id=assignee_id,
+            updated_by=updated_by,
         )

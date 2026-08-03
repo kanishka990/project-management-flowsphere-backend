@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from enum import Enum
 from typing import Optional, TYPE_CHECKING
 from uuid import UUID as UUIDType
@@ -25,19 +26,31 @@ if TYPE_CHECKING:
 
 
 class IssueType(str, Enum):
-    BUG = "Bug"
+    EPIC = "Epic"
     STORY = "Story"
     TASK = "Task"
-    EPIC = "Epic"
+    BUG = "Bug"
     IMPROVEMENT = "Improvement"
+    SPIKE = "Spike"
+    SUB_TASK = "Sub Task"
 
 
 class IssueStatus(str, Enum):
+    BACKLOG = "Backlog"
     TO_DO = "To Do"
     IN_PROGRESS = "In Progress"
-    IN_REVIEW = "In Review"
+    CODE_REVIEW = "Code Review"
+    TESTING = "Testing"
+    UAT = "UAT"
     DONE = "Done"
     CLOSED = "Closed"
+
+
+class IssuePriority(str, Enum):
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
+    CRITICAL = "Critical"
 
 
 class Issue(Base, FullAuditMixin):
@@ -93,19 +106,19 @@ class Issue(Base, FullAuditMixin):
         default=IssueType.TASK,
     )
 
-    priority: Mapped[str] = mapped_column(
-        String(20),
+    priority: Mapped[IssuePriority] = mapped_column(
+        SQLEnum(IssuePriority, name="issue_priority"),
         nullable=False,
-        default="Medium",
+        default=IssuePriority.MEDIUM,
     )
 
     status: Mapped[IssueStatus] = mapped_column(
         SQLEnum(IssueStatus, name="issue_status"),
         nullable=False,
-        default=IssueStatus.TO_DO,
+        default=IssueStatus.BACKLOG,
     )
 
-    due_date: Mapped[Optional[Date]] = mapped_column(
+    due_date: Mapped[Optional[date]] = mapped_column(
         Date,
         nullable=True,
     )
@@ -139,11 +152,9 @@ class Issue(Base, FullAuditMixin):
     def project_name(self) -> str | None:
         return self.project.name if self.project else None
 
-
     @property
     def assignee_name(self) -> str | None:
         return self.assignee.full_name if self.assignee else None
-
 
     @property
     def reporter_name(self) -> str | None:
