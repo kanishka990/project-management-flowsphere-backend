@@ -1,4 +1,4 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.timesheet_model import Timesheet
@@ -17,20 +17,20 @@ class DashboardRepository:
                 User.full_name,
                 func.count(Timesheet.id).label("assigned_tasks"),
                 func.sum(
-                    func.case(
+                    case(
                         (Timesheet.status == "Approved", 1),
                         else_=0,
                     )
                 ).label("completed_tasks"),
                 func.sum(
-                    func.case(
+                    case(
                         (Timesheet.status == "Rejected", 1),
                         else_=0,
                     )
                 ).label("delayed_tasks"),
             )
-            .join(Timesheet, Timesheet.employee_id == User.id)
-            .group_by(User.id)
+            .outerjoin(Timesheet, Timesheet.employee_id == User.id)
+            .group_by(User.id, User.emp_id, User.full_name)
         )
 
         result = await self.session.execute(stmt)
@@ -43,20 +43,20 @@ class DashboardRepository:
                 Project.name,
                 func.count(Timesheet.id).label("assigned_tasks"),
                 func.sum(
-                    func.case(
+                    case(
                         (Timesheet.status == "Approved", 1),
                         else_=0,
                     )
                 ).label("completed_tasks"),
                 func.sum(
-                    func.case(
+                    case(
                         (Timesheet.status == "Rejected", 1),
                         else_=0,
                     )
                 ).label("delayed_tasks"),
             )
-            .join(Timesheet, Timesheet.project_id == Project.id)
-            .group_by(Project.id)
+            .outerjoin(Timesheet, Timesheet.project_id == Project.id)
+            .group_by(Project.id, Project.name)
         )
 
         result = await self.session.execute(stmt)

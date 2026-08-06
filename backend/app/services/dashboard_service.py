@@ -24,7 +24,7 @@ class DashboardService:
             hit = round((completed / assigned) * 100, 2)
             miss = round((delayed / assigned) * 100, 2)
 
-        if hit > 90:
+        if hit >= 90:
             status = "Green"
         elif hit >= 70:
             status = "Orange"
@@ -45,16 +45,18 @@ class DashboardService:
                 row.delayed_tasks,
             )
 
-            data.append({
-                "employee_id": row.emp_id,
-                "employee_name": f"{row.first_name} {row.last_name or ''}".strip(),
-                "assigned_tasks": row.assigned_tasks,
-                "completed_tasks": row.completed_tasks,
-                "delayed_tasks": row.delayed_tasks,
-                "hit_percentage": hit,
-                "miss_percentage": miss,
-                "status": status,
-            })
+            data.append(
+                {
+                    "employee_id": row.emp_id,
+                    "employee_name": row.full_name,
+                    "assigned_tasks": row.assigned_tasks or 0,
+                    "completed_tasks": row.completed_tasks or 0,
+                    "delayed_tasks": row.delayed_tasks or 0,
+                    "hit_percentage": hit,
+                    "miss_percentage": miss,
+                    "status": status,
+                }
+            )
 
         return data
 
@@ -70,16 +72,18 @@ class DashboardService:
                 row.delayed_tasks,
             )
 
-            data.append({
-                "project_id": str(row.id),
-                "project_name": row.name,
-                "assigned_tasks": row.assigned_tasks,
-                "completed_tasks": row.completed_tasks,
-                "delayed_tasks": row.delayed_tasks,
-                "hit_percentage": hit,
-                "miss_percentage": miss,
-                "status": status,
-            })
+            data.append(
+                {
+                    "project_id": str(row.id),
+                    "project_name": row.name,
+                    "assigned_tasks": row.assigned_tasks or 0,
+                    "completed_tasks": row.completed_tasks or 0,
+                    "delayed_tasks": row.delayed_tasks or 0,
+                    "hit_percentage": hit,
+                    "miss_percentage": miss,
+                    "status": status,
+                }
+            )
 
         return data
 
