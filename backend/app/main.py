@@ -24,7 +24,7 @@ from app.api.v1.routers.dashboard import router as dashboard_router
 from app.api.v1.routers.departments import router as departments_router
 
 from app.api.v1.routers.resource_utilization import router as resource_utilization_router
-
+from app.api.v1.routers import issue
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,7 +66,8 @@ def create_app() -> FastAPI:
     app.include_router(
     resource_utilization_router,
     prefix="/api/v1",
-)
+)   
+    app.include_router(issue.router, prefix="/api/v1")
 
     app.add_exception_handler(AppException, app_exception_handler)
 

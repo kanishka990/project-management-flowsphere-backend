@@ -15,6 +15,7 @@ from .timesheet_model import Timesheet
 from .subtask_model import SubTask
 from .email_verification_token_model import EmailVerificationToken
 from .password_reset_token_model import PasswordResetToken
+from .issue_model import Issue
 
 __all__ = [
     "Base",
@@ -31,6 +32,10 @@ __all__ = [
     "Task",
     "TaskAssignment",
     "Timesheet",
+    "EmailVerificationToken",
+    "PasswordResetToken",
+    "SubTask",
+    "Issue",
     "EmailVerificationToken",
     "PasswordResetToken",
 ]

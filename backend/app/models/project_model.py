@@ -4,6 +4,7 @@ import uuid
 from enum import Enum
 from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID as UUIDType
+from app.models.issue_model import Issue
 
 from sqlalchemy import (
     UUID,
@@ -49,6 +50,13 @@ class Project(Base, FullAuditMixin):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+    )
+
+    issues: Mapped[List["Issue"]] = relationship(
+        "Issue",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     name: Mapped[str] = mapped_column(

@@ -24,7 +24,7 @@ class DashboardService:
             hit = round((completed / assigned) * 100, 2)
             miss = round((delayed / assigned) * 100, 2)
 
-        if hit > 90:
+        if hit >= 90:
             status = "Green"
         elif hit >= 70:
             status = "Orange"
@@ -39,22 +39,28 @@ class DashboardService:
         data = []
 
         for row in rows:
+            assigned = row.assigned_tasks or 0
+            completed = row.completed_tasks or 0
+            delayed = row.delayed_tasks or 0
+
             hit, miss, status = self._calculate(
-                row.assigned_tasks,
-                row.completed_tasks,
-                row.delayed_tasks,
+                assigned,
+                completed,
+                delayed,
             )
 
-            data.append({
-                "employee_id": row.emp_id,
-                "employee_name": f"{row.first_name} {row.last_name or ''}".strip(),
-                "assigned_tasks": row.assigned_tasks,
-                "completed_tasks": row.completed_tasks,
-                "delayed_tasks": row.delayed_tasks,
-                "hit_percentage": hit,
-                "miss_percentage": miss,
-                "status": status,
-            })
+            data.append(
+                {
+                    "employee_id": row.emp_id,
+                    "employee_name": row.full_name,
+                    "assigned_tasks": assigned,
+                    "completed_tasks": completed,
+                    "delayed_tasks": delayed,
+                    "hit_percentage": hit,
+                    "miss_percentage": miss,
+                    "status": status,
+                }
+            )
 
         return data
 
@@ -64,27 +70,61 @@ class DashboardService:
         data = []
 
         for row in rows:
+            assigned = row.assigned_tasks or 0
+            completed = row.completed_tasks or 0
+            delayed = row.delayed_tasks or 0
+
             hit, miss, status = self._calculate(
-                row.assigned_tasks,
-                row.completed_tasks,
-                row.delayed_tasks,
+                assigned,
+                completed,
+                delayed,
             )
 
-            data.append({
-                "project_id": str(row.id),
-                "project_name": row.name,
-                "assigned_tasks": row.assigned_tasks,
-                "completed_tasks": row.completed_tasks,
-                "delayed_tasks": row.delayed_tasks,
-                "hit_percentage": hit,
-                "miss_percentage": miss,
-                "status": status,
-            })
+            data.append(
+                {
+                    "project_id": str(row.id),
+                    "project_name": row.name,
+                    "assigned_tasks": assigned,
+                    "completed_tasks": completed,
+                    "delayed_tasks": delayed,
+                    "hit_percentage": hit,
+                    "miss_percentage": miss,
+                    "status": status,
+                }
+            )
 
         return data
 
     async def team_dashboard(self):
-        return await self.employee_dashboard()
+        # Team module is not implemented yet.
+        return []
 
     async def department_dashboard(self):
-        return await self.employee_dashboard()
+        rows = await self.dashboard_repo.department_dashboard()
+
+        data = []
+
+        for row in rows:
+            assigned = row.assigned_tasks or 0
+            completed = row.completed_tasks or 0
+            delayed = row.delayed_tasks or 0
+
+            hit, miss, status = self._calculate(
+                assigned,
+                completed,
+                delayed,
+            )
+
+            data.append(
+                {
+                    "department_name": row.department_name,
+                    "assigned_tasks": assigned,
+                    "completed_tasks": completed,
+                    "delayed_tasks": delayed,
+                    "hit_percentage": hit,
+                    "miss_percentage": miss,
+                    "status": status,
+                }
+            )
+
+        return data

@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 from uuid import UUID as UUIDType
+from app.models.issue_model import Issue
 
 from sqlalchemy import (
     CheckConstraint,
@@ -34,6 +35,20 @@ class User(Base, FullAuditMixin):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+    )
+
+    assigned_issues: Mapped[list["Issue"]] = relationship(
+        "Issue",
+        foreign_keys="Issue.assignee_id",
+        back_populates="assignee",
+        lazy="selectin",
+    )
+
+    reported_issues: Mapped[list["Issue"]] = relationship(
+        "Issue",
+        foreign_keys="Issue.reporter_id",
+        back_populates="reporter",
+        lazy="selectin",
     )
 
     emp_id: Mapped[str] = mapped_column(

@@ -1,13 +1,33 @@
+# Environment files
 .env
 *.env
 
+# Python cache
 __pycache__/
+/__pycache__/
 *.py[cod]
 *$py.class
 
+# Virtual environments
 .venv/
 venv/
 
+# IDE
+.vscode/
+
+# GitHub config (optional)
 .github/
 
-.vscode/
+# Alembic cache
+alembic/__pycache__/
+
+# Testing
+.pytest_cache/
+
+# Build files
+dist/
+build/
+*.egg-info/
+
+__pycache__/
+*.py[cod]
