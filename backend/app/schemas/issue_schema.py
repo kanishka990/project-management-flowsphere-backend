@@ -48,7 +48,7 @@ class IssueUpdate(BaseModel):
     priority: Optional[IssuePriority] = None
     status: Optional[IssueStatus] = None
 
-    due_date: Optional[date] = None
+    due_date: Optional[date] = None 
     story_points: Optional[str] = None
 
 
