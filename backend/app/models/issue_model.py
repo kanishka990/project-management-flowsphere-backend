@@ -11,7 +11,6 @@ from sqlalchemy import (
     Date,
     Enum as SQLEnum,
     ForeignKey,
-    Integer,
     String,
     Text,
 )
@@ -123,8 +122,8 @@ class Issue(Base, FullAuditMixin):
         nullable=True,
     )
 
-    story_points: Mapped[Optional[int]] = mapped_column(
-        Integer,
+    story_points: Mapped[Optional[str]] = mapped_column(
+        String,
         nullable=True,
     )
 
